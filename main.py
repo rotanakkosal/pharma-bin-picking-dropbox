@@ -78,10 +78,15 @@ def _session_dir(dataset: str, session: Optional[str]) -> Path:
     if session:
         safe_session = session.replace("..", "").strip("/")
         d = base / safe_session
-    else:
-        # Auto-create a timestamped session
-        ts = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
-        d = base / ts
+        d.mkdir(parents=True, exist_ok=True)
+        return d
+    # Auto-pick date-based session with _2, _3, … suffix for same-day reruns
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    d = base / today
+    counter = 2
+    while d.exists():
+        d = base / f"{today}_{counter}"
+        counter += 1
     d.mkdir(parents=True, exist_ok=True)
     return d
 

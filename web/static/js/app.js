@@ -581,6 +581,33 @@ let isUploading = false;
 let isPaused = false;
 const PARALLEL_LIMIT = 3;
 
+// Pick today's date as the session name, with _2, _3, … suffix if that dataset
+// already has a session for today. Uses local time so the name matches the
+// user's calendar day. Safe when the dataset doesn't exist yet (404 → no sessions).
+async function pickSessionName(dataset) {
+    const d = new Date();
+    const pad = (n) => String(n).padStart(2, '0');
+    const base = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+
+    if (!dataset) return base;
+
+    let existing = new Set();
+    try {
+        const resp = await fetch(`/datasets/${encodeURIComponent(dataset)}`);
+        if (resp.ok) {
+            const data = await resp.json();
+            for (const s of data.sessions || []) existing.add(s.name);
+        }
+    } catch (e) { /* new dataset or transient error — fall through with empty set */ }
+
+    if (!existing.has(base)) return base;
+    for (let i = 2; i < 1000; i++) {
+        const candidate = `${base}_${i}`;
+        if (!existing.has(candidate)) return candidate;
+    }
+    return base;
+}
+
 async function upload() {
     if (isUploading) return;
     const dataset = document.getElementById('dataset').value.trim();
@@ -590,13 +617,11 @@ async function upload() {
     const queue = selectedFiles.filter(f => !f.status || f.status === 'error');
     if (queue.length === 0) return;
 
-    // If the user didn't specify a session, generate ONE timestamp here and share
+    // If the user didn't specify a session, pick ONE date-based name here and share
     // it across every file so the whole batch lands in a single session folder.
     // (Without this, the server would generate a new timestamp per request → N folders.)
     if (!session) {
-        const d = new Date();
-        const pad = (n) => String(n).padStart(2, '0');
-        session = `${d.getUTCFullYear()}${pad(d.getUTCMonth()+1)}${pad(d.getUTCDate())}_${pad(d.getUTCHours())}${pad(d.getUTCMinutes())}${pad(d.getUTCSeconds())}`;
+        session = await pickSessionName(dataset);
     }
 
     const uploadUrl = dataset
