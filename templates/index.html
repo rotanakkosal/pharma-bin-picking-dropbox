@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UOAIS Data Upload</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0f1117;
+            color: #e1e4e8;
+            min-height: 100vh;
+            padding: 2rem;
+        }
+
+        h1 {
+            font-size: 1.6rem;
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+
+        .subtitle {
+            color: #8b949e;
+            font-size: 0.9rem;
+            margin-bottom: 2rem;
+        }
+
+        .container {
+            max-width: 720px;
+            margin: 0 auto;
+        }
+
+        /* Form fields */
+        .fields {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .field {
+            flex: 1;
+        }
+
+        .field label {
+            display: block;
+            font-size: 0.8rem;
+            color: #8b949e;
+            margin-bottom: 0.35rem;
+            font-weight: 500;
+        }
+
+        .field input, .field textarea {
+            width: 100%;
+            padding: 0.55rem 0.75rem;
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            color: #e1e4e8;
+            font-size: 0.9rem;
+            outline: none;
+            transition: border-color 0.15s;
+        }
+
+        .field input:focus, .field textarea:focus {
+            border-color: #58a6ff;
+        }
+
+        .field input::placeholder, .field textarea::placeholder {
+            color: #484f58;
+        }
+
+        .field-full {
+            margin-bottom: 1.5rem;
+        }
+
+        .field-full textarea {
+            width: 100%;
+            padding: 0.55rem 0.75rem;
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            color: #e1e4e8;
+            font-size: 0.85rem;
+            font-family: monospace;
+            outline: none;
+            resize: vertical;
+            min-height: 60px;
+            transition: border-color 0.15s;
+        }
+
+        .field-full textarea:focus {
+            border-color: #58a6ff;
+        }
+
+        /* Drop zone */
+        .dropzone {
+            border: 2px dashed #30363d;
+            border-radius: 12px;
+            padding: 3rem 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 1.5rem;
+            position: relative;
+        }
+
+        .dropzone:hover {
+            border-color: #58a6ff;
+            background: rgba(88, 166, 255, 0.04);
+        }
+
+        .dropzone.dragover {
+            border-color: #58a6ff;
+            background: rgba(88, 166, 255, 0.08);
+            transform: scale(1.01);
+        }
+
+        .dropzone-icon {
+            font-size: 2.5rem;
+            margin-bottom: 0.75rem;
+            opacity: 0.6;
+        }
+
+        .dropzone-text {
+            font-size: 1rem;
+            color: #8b949e;
+        }
+
+        .dropzone-text strong {
+            color: #58a6ff;
+        }
+
+        .dropzone-hint {
+            font-size: 0.8rem;
+            color: #484f58;
+            margin-top: 0.5rem;
+        }
+
+        .dropzone input[type="file"] {
+            display: none;
+        }
+
+        /* File list */
+        .file-list {
+            margin-bottom: 1.5rem;
+        }
+
+        .file-list-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .file-list-header h3 {
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: #8b949e;
+        }
+
+        .clear-btn {
+            font-size: 0.75rem;
+            color: #f85149;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+        }
+
+        .clear-btn:hover {
+            background: rgba(248, 81, 73, 0.1);
+        }
+
+        .file-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.5rem 0.75rem;
+            background: #161b22;
+            border: 1px solid #21262d;
+            border-radius: 6px;
+            margin-bottom: 0.35rem;
+            font-size: 0.85rem;
+        }
+
+        .file-item-info {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            min-width: 0;
+        }
+
+        .file-item-name {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .file-item-size {
+            color: #484f58;
+            font-size: 0.75rem;
+            flex-shrink: 0;
+        }
+
+        .file-item-remove {
+            color: #484f58;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1.1rem;
+            padding: 0 0.3rem;
+            line-height: 1;
+            border-radius: 4px;
+        }
+
+        .file-item-remove:hover {
+            color: #f85149;
+            background: rgba(248, 81, 73, 0.1);
+        }
+
+        /* Upload button */
+        .upload-btn {
+            width: 100%;
+            padding: 0.75rem;
+            font-size: 1rem;
+            font-weight: 600;
+            color: #fff;
+            background: #238636;
+            border: 1px solid #2ea043;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+
+        .upload-btn:hover:not(:disabled) {
+            background: #2ea043;
+        }
+
+        .upload-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        /* Progress */
+        .progress-wrap {
+            margin-top: 1rem;
+            display: none;
+        }
+
+        .progress-wrap.active {
+            display: block;
+        }
+
+        .progress-bar-bg {
+            width: 100%;
+            height: 6px;
+            background: #21262d;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            width: 0%;
+            background: #58a6ff;
+            border-radius: 3px;
+            transition: width 0.2s;
+        }
+
+        .progress-text {
+            font-size: 0.8rem;
+            color: #8b949e;
+            margin-top: 0.4rem;
+            text-align: center;
+        }
+
+        /* Result */
+        .result {
+            margin-top: 1.5rem;
+            padding: 1rem;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            display: none;
+        }
+
+        .result.success {
+            display: block;
+            background: rgba(35, 134, 54, 0.12);
+            border: 1px solid #238636;
+        }
+
+        .result.error {
+            display: block;
+            background: rgba(248, 81, 73, 0.12);
+            border: 1px solid #f85149;
+        }
+
+        .result pre {
+            white-space: pre-wrap;
+            word-break: break-all;
+            font-family: monospace;
+            font-size: 0.8rem;
+            margin-top: 0.5rem;
+            color: #c9d1d9;
+        }
+
+        /* Browse section */
+        .browse-section {
+            margin-top: 3rem;
+            padding-top: 2rem;
+            border-top: 1px solid #21262d;
+        }
+
+        .browse-section h2 {
+            font-size: 1.2rem;
+            margin-bottom: 1rem;
+        }
+
+        .dataset-card {
+            background: #161b22;
+            border: 1px solid #21262d;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .dataset-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .dataset-card-name {
+            font-weight: 600;
+            font-size: 1rem;
+        }
+
+        .dataset-card-stats {
+            font-size: 0.8rem;
+            color: #8b949e;
+        }
+
+        .session-tag {
+            display: inline-block;
+            padding: 0.2rem 0.55rem;
+            background: #21262d;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            color: #8b949e;
+            margin: 0.15rem 0.2rem 0.15rem 0;
+        }
+
+        .empty-state {
+            text-align: center;
+            color: #484f58;
+            padding: 2rem;
+            font-size: 0.9rem;
+        }
+
+        .refresh-btn {
+            font-size: 0.8rem;
+            color: #58a6ff;
+            background: none;
+            border: 1px solid #30363d;
+            padding: 0.35rem 0.75rem;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .refresh-btn:hover {
+            background: rgba(88, 166, 255, 0.08);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>UOAIS Data Upload</h1>
+        <p class="subtitle">Drag & drop files to upload to the GPU server</p>
+
+        <!-- Dataset / Session -->
+        <div class="fields">
+            <div class="field">
+                <label>Dataset name *</label>
+                <input type="text" id="dataset" placeholder="e.g. bottle_v1, l515_captures">
+            </div>
+            <div class="field">
+                <label>Session (optional)</label>
+                <input type="text" id="session" placeholder="auto-generated if empty">
+            </div>
+        </div>
+
+        <!-- Metadata -->
+        <div class="field-full">
+            <label style="font-size:0.8rem;color:#8b949e;margin-bottom:0.35rem;display:block;font-weight:500;">
+                Metadata JSON (optional)
+            </label>
+            <textarea id="metadata" placeholder='{"camera":"L515","resolution":"960x540"}'></textarea>
+        </div>
+
+        <!-- Drop zone -->
+        <div class="dropzone" id="dropzone">
+            <div class="dropzone-icon">+</div>
+            <div class="dropzone-text">
+                <strong>Drop files here</strong> or click to browse
+            </div>
+            <div class="dropzone-hint">Any file type — PNG, NPY, EXR, PLY, BAG, JSON, etc.</div>
+            <input type="file" id="fileInput" multiple>
+        </div>
+
+        <!-- File list -->
+        <div class="file-list" id="fileList" style="display:none;">
+            <div class="file-list-header">
+                <h3 id="fileCount">0 files selected</h3>
+                <button class="clear-btn" onclick="clearFiles()">Clear all</button>
+            </div>
+            <div id="fileItems"></div>
+        </div>
+
+        <!-- Upload button -->
+        <button class="upload-btn" id="uploadBtn" disabled onclick="upload()">Upload</button>
+
+        <!-- Progress -->
+        <div class="progress-wrap" id="progress">
+            <div class="progress-bar-bg">
+                <div class="progress-bar" id="progressBar"></div>
+            </div>
+            <div class="progress-text" id="progressText">Uploading...</div>
+        </div>
+
+        <!-- Result -->
+        <div class="result" id="result">
+            <div id="resultMessage"></div>
+            <pre id="resultDetail"></pre>
+        </div>
+
+        <!-- Browse datasets -->
+        <div class="browse-section">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
+                <h2>Datasets on server</h2>
+                <button class="refresh-btn" onclick="loadDatasets()">Refresh</button>
+            </div>
+            <div id="datasetsList">
+                <div class="empty-state">Loading...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let selectedFiles = [];
+
+        // --- Drop zone ---
+        const dropzone = document.getElementById('dropzone');
+        const fileInput = document.getElementById('fileInput');
+
+        dropzone.addEventListener('click', () => fileInput.click());
+
+        dropzone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropzone.classList.add('dragover');
+        });
+
+        dropzone.addEventListener('dragleave', () => {
+            dropzone.classList.remove('dragover');
+        });
+
+        dropzone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropzone.classList.remove('dragover');
+            addFiles(e.dataTransfer.files);
+        });
+
+        fileInput.addEventListener('change', () => {
+            addFiles(fileInput.files);
+            fileInput.value = '';
+        });
+
+        function addFiles(fileListObj) {
+            for (const f of fileListObj) {
+                // Avoid duplicates by name+size
+                const exists = selectedFiles.some(
+                    s => s.name === f.name && s.size === f.size
+                );
+                if (!exists) selectedFiles.push(f);
+            }
+            renderFiles();
+        }
+
+        function removeFile(index) {
+            selectedFiles.splice(index, 1);
+            renderFiles();
+        }
+
+        function clearFiles() {
+            selectedFiles = [];
+            renderFiles();
+        }
+
+        function formatSize(bytes) {
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+            return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+        }
+
+        function renderFiles() {
+            const list = document.getElementById('fileList');
+            const items = document.getElementById('fileItems');
+            const count = document.getElementById('fileCount');
+            const btn = document.getElementById('uploadBtn');
+
+            if (selectedFiles.length === 0) {
+                list.style.display = 'none';
+                btn.disabled = true;
+                return;
+            }
+
+            list.style.display = 'block';
+            count.textContent = selectedFiles.length + ' file' + (selectedFiles.length > 1 ? 's' : '') + ' selected';
+
+            items.innerHTML = selectedFiles.map((f, i) => `
+                <div class="file-item">
+                    <div class="file-item-info">
+                        <span class="file-item-name">${f.name}</span>
+                        <span class="file-item-size">${formatSize(f.size)}</span>
+                    </div>
+                    <button class="file-item-remove" onclick="removeFile(${i})">&times;</button>
+                </div>
+            `).join('');
+
+            btn.disabled = false;
+        }
+
+        // --- Upload ---
+        async function upload() {
+            const dataset = document.getElementById('dataset').value.trim();
+            if (!dataset) {
+                alert('Please enter a dataset name.');
+                return;
+            }
+            if (selectedFiles.length === 0) return;
+
+            const session = document.getElementById('session').value.trim();
+            const metadata = document.getElementById('metadata').value.trim();
+
+            const formData = new FormData();
+            if (session) formData.append('session', session);
+            if (metadata) formData.append('metadata', metadata);
+            for (const f of selectedFiles) {
+                formData.append('files', f);
+            }
+
+            const btn = document.getElementById('uploadBtn');
+            const progress = document.getElementById('progress');
+            const progressBar = document.getElementById('progressBar');
+            const progressText = document.getElementById('progressText');
+            const result = document.getElementById('result');
+            const msg = document.getElementById('resultMessage');
+            const detail = document.getElementById('resultDetail');
+
+            btn.disabled = true;
+            progress.classList.add('active');
+            result.className = 'result';
+            progressBar.style.width = '50%';
+            progressText.textContent = 'Uploading...';
+
+            try {
+                const resp = await fetch(`/upload/${encodeURIComponent(dataset)}`, {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                progressBar.style.width = '100%';
+                progress.classList.remove('active');
+
+                if (resp.ok) {
+                    const data = await resp.json();
+                    result.className = 'result success';
+                    msg.textContent = `Uploaded ${data.uploaded.length} file(s) to ${data.path}`;
+                    detail.textContent = JSON.stringify(data, null, 2);
+                    clearFiles();
+                    loadDatasets();
+                } else {
+                    result.className = 'result error';
+                    msg.textContent = `Upload failed (HTTP ${resp.status})`;
+                    detail.textContent = await resp.text();
+                }
+            } catch (e) {
+                progress.classList.remove('active');
+                result.className = 'result error';
+                msg.textContent = 'Upload failed: ' + e.message;
+                detail.textContent =
+                    `Page URL: ${window.location.href}\n` +
+                    `Target: /upload/${dataset}\n` +
+                    `Error: ${e.name} — ${e.message}`;
+            }
+            btn.disabled = selectedFiles.length === 0;
+        }
+
+        // --- Browse datasets ---
+        async function loadDatasets() {
+            const container = document.getElementById('datasetsList');
+            try {
+                const resp = await fetch('/datasets');
+                const data = await resp.json();
+
+                if (data.datasets.length === 0) {
+                    container.innerHTML = '<div class="empty-state">No datasets yet. Upload some files to get started.</div>';
+                    return;
+                }
+
+                container.innerHTML = data.datasets.map(ds => `
+                    <div class="dataset-card">
+                        <div class="dataset-card-header">
+                            <span class="dataset-card-name">${ds.name}</span>
+                            <span class="dataset-card-stats">
+                                ${ds.file_count} files &middot; ${formatSize(ds.total_size_bytes)}
+                            </span>
+                        </div>
+                        <div>
+                            ${ds.sessions.map(s => `<span class="session-tag">${s}</span>`).join('')}
+                        </div>
+                    </div>
+                `).join('');
+            } catch (e) {
+                container.innerHTML = '<div class="empty-state">Failed to load datasets.</div>';
+            }
+        }
+
+        // Load on start
+        loadDatasets();
+    </script>
+</body>
+</html>
