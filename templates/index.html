@@ -3,33 +3,304 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>UOAIS Data Upload</title>
+    <title>Pharma Bin Pikcing Data Upload</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #0f1117;
-            color: #e1e4e8;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f8f9fb;
+            color: #292D32;
             min-height: 100vh;
             padding: 2rem;
+            -webkit-font-smoothing: antialiased;
         }
 
-        h1 {
-            font-size: 1.6rem;
-            font-weight: 600;
-            margin-bottom: 0.25rem;
+        .page {
+            max-width: 1180px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
         }
 
-        .subtitle {
-            color: #8b949e;
-            font-size: 0.9rem;
-            margin-bottom: 2rem;
+        .top-row {
+            display: flex;
+            gap: 1.5rem;
+            align-items: flex-start;
         }
 
         .container {
-            max-width: 720px;
-            margin: 0 auto;
+            flex: 1;
+            min-width: 0;
+            max-width: 560px;
+            background: #ffffff;
+            border-radius: 16px;
+            padding: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+        }
+
+        .detail-panel {
+            flex: 1;
+            min-width: 0;
+            min-height: 0;
+            max-height: calc(100vh - 4rem);
+            background: #ffffff;
+            border-radius: 16px;
+            padding: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .datasets-panel {
+            background: #ffffff;
+            border-radius: 16px;
+            padding: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+        }
+
+        @media (max-width: 960px) {
+            .top-row { flex-direction: column; }
+            .container, .detail-panel { max-width: 560px; width: 100%; margin: 0 auto; }
+        }
+
+        /* Detail panel */
+        .detail-empty {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #A9ACB4;
+            font-size: 0.9rem;
+            text-align: center;
+            gap: 0.75rem;
+        }
+
+        .detail-empty svg {
+            width: 56px;
+            height: auto;
+            color: #d1d5db;
+        }
+
+        .detail-header {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.85rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #eef0f4;
+            margin-bottom: 1rem;
+        }
+
+        .detail-header-text {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .detail-header-name {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #292D32;
+            margin-bottom: 0.2rem;
+            word-break: break-all;
+        }
+
+        .detail-header-stats {
+            font-size: 0.8rem;
+            color: #A9ACB4;
+        }
+
+        .detail-header-actions {
+            display: flex;
+            gap: 0.35rem;
+            flex-shrink: 0;
+        }
+
+        .detail-action-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: 1px solid #e5e7eb;
+            background: #ffffff;
+            color: #6b7280;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .detail-action-btn:hover {
+            background: #f3f4f6;
+            color: #292D32;
+        }
+
+        .detail-action-btn.danger:hover {
+            background: #fee2e2;
+            color: #dc2626;
+            border-color: #fecaca;
+        }
+
+        .detail-action-btn svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        .detail-body {
+            flex: 1;
+            min-height: 0;
+            overflow-y: auto;
+        }
+
+        .session-group {
+            margin-bottom: 1rem;
+        }
+
+        .session-group-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem;
+            background: #EEF1F7;
+            border-radius: 8px;
+            margin-bottom: 0.25rem;
+        }
+
+        .session-group-folder {
+            width: 22px;
+            height: 22px;
+            flex-shrink: 0;
+            background: linear-gradient(180deg, #94a3b8, #64748b);
+            box-shadow: 0 1px 2px rgba(71, 85, 105, 0.2), inset 0 1px 0 rgba(255,255,255,0.3);
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #ffffff;
+        }
+
+        .session-group-folder svg {
+            width: 14px;
+            height: auto;
+        }
+
+        .session-group-name {
+            flex: 1;
+            min-width: 0;
+            font-weight: 600;
+            font-size: 0.85rem;
+            color: #292D32;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .session-group-stats {
+            font-size: 0.72rem;
+            color: #6b7280;
+            flex-shrink: 0;
+        }
+
+        .session-files {
+            padding-left: 1.5rem;
+        }
+
+        /* Datasets bottom panel */
+        .datasets-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #eef0f4;
+            margin-bottom: 1rem;
+        }
+
+        .datasets-header h2 {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #292D32;
+        }
+
+        .datasets-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 0.6rem;
+        }
+
+        .dataset-card.selected {
+            background: #fdf2f5;
+            outline: 2px solid #93243f;
+        }
+
+        /* ====== Header ====== */
+        .panel-header {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.85rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #eef0f4;
+            margin-bottom: 1.25rem;
+            position: relative;
+        }
+
+        .panel-header-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 1px solid #e5e7eb;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .panel-header-icon svg {
+            width: 20px;
+            height: 20px;
+            color: #292D32;
+        }
+
+        .panel-header-text {
+            flex: 1;
+        }
+
+        .panel-header-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #292D32;
+            margin-bottom: 0.15rem;
+        }
+
+        .panel-header-subtitle {
+            font-size: 0.85rem;
+            color: #6b7280;
+        }
+
+        .panel-header-close {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: none;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #6b7280;
+        }
+
+        .panel-header-close:hover {
+            background: #f3f4f6;
+            color: #292D32;
+        }
+
+        .panel-header-close svg {
+            width: 18px;
+            height: 18px;
         }
 
         /* Form fields */
@@ -46,7 +317,7 @@
         .field label {
             display: block;
             font-size: 0.8rem;
-            color: #8b949e;
+            color: #57606a;
             margin-bottom: 0.35rem;
             font-weight: 500;
         }
@@ -54,21 +325,23 @@
         .field input, .field textarea {
             width: 100%;
             padding: 0.55rem 0.75rem;
-            background: #161b22;
-            border: 1px solid #30363d;
-            border-radius: 6px;
-            color: #e1e4e8;
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            color: #292D32;
             font-size: 0.9rem;
             outline: none;
-            transition: border-color 0.15s;
+            transition: border-color 0.15s, box-shadow 0.15s;
         }
 
         .field input:focus, .field textarea:focus {
-            border-color: #58a6ff;
+            border-color: #93243f;
+            box-shadow: 0 0 0 3px rgba(147, 36, 63, 0.1);
         }
 
         .field input::placeholder, .field textarea::placeholder {
-            color: #484f58;
+            color: #A9ACB4;
+            font-size: 0.8rem;
         }
 
         .field-full {
@@ -78,64 +351,84 @@
         .field-full textarea {
             width: 100%;
             padding: 0.55rem 0.75rem;
-            background: #161b22;
-            border: 1px solid #30363d;
-            border-radius: 6px;
-            color: #e1e4e8;
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            color: #292D32;
             font-size: 0.85rem;
             font-family: monospace;
             outline: none;
             resize: vertical;
             min-height: 60px;
-            transition: border-color 0.15s;
+            transition: border-color 0.15s, box-shadow 0.15s;
         }
 
         .field-full textarea:focus {
-            border-color: #58a6ff;
+            border-color: #93243f;
+            box-shadow: 0 0 0 3px rgba(147, 36, 63, 0.1);
         }
 
         /* Drop zone */
         .dropzone {
-            border: 2px dashed #30363d;
-            border-radius: 12px;
-            padding: 3rem 2rem;
+            border: 1.5px dashed #d1d5db;
+            border-radius: 14px;
+            padding: 2rem 1.5rem;
             text-align: center;
-            cursor: pointer;
+            cursor: default;
             transition: all 0.2s;
-            margin-bottom: 1.5rem;
+            margin-bottom: 1rem;
             position: relative;
-        }
-
-        .dropzone:hover {
-            border-color: #58a6ff;
-            background: rgba(88, 166, 255, 0.04);
+            background: #ffffff;
         }
 
         .dropzone.dragover {
-            border-color: #58a6ff;
-            background: rgba(88, 166, 255, 0.08);
-            transform: scale(1.01);
+            border-color: #93243f;
+            background: #fdf2f5;
         }
 
         .dropzone-icon {
-            font-size: 2.5rem;
-            margin-bottom: 0.75rem;
-            opacity: 0.6;
+            width: 36px;
+            height: 36px;
+            margin: 0 auto 0.85rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .dropzone-icon svg {
+            width: 36px;
+            height: 36px;
         }
 
         .dropzone-text {
-            font-size: 1rem;
-            color: #8b949e;
-        }
-
-        .dropzone-text strong {
-            color: #58a6ff;
+            font-size: 0.95rem;
+            color: #292D32;
+            font-weight: 500;
         }
 
         .dropzone-hint {
             font-size: 0.8rem;
-            color: #484f58;
-            margin-top: 0.5rem;
+            color: #9ca3af;
+            margin-top: 0.35rem;
+            margin-bottom: 1rem;
+        }
+
+        .browse-btn {
+            display: inline-block;
+            padding: 0.5rem 1.25rem;
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: #292D32;
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.15s, border-color 0.15s;
+        }
+
+        .browse-btn:hover {
+            background: #f9fafb;
+            border-color: #9ca3af;
         }
 
         .dropzone input[type="file"] {
@@ -157,12 +450,273 @@
         .file-list-header h3 {
             font-size: 0.85rem;
             font-weight: 500;
-            color: #8b949e;
+            color: #57606a;
+        }
+
+        .file-list-toggle {
+            font-size: 0.75rem;
+            color: #0969da;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            margin-right: 0.25rem;
+        }
+
+        .file-list-toggle:hover {
+            background: rgba(9, 105, 218, 0.08);
+        }
+
+        .file-items {
+            padding-right: 0.25rem;
+        }
+
+        /* Summary bar above the tree */
+        .upload-summary {
+            background: #EEF1F7;
+            border-radius: 12px;
+            padding: 0.75rem 0.85rem;
+            margin-bottom: 0.75rem;
+            font-size: 0.85rem;
+        }
+
+        .upload-summary-line {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .upload-summary-text {
+            font-weight: 600;
+            color: #292D32;
+            font-size: 0.85rem;
+        }
+
+        .upload-summary-meta {
+            font-size: 0.78rem;
+            color: #6b7280;
+        }
+
+        .upload-summary-bar {
+            height: 4px;
+            background: #d8dce5;
+            border-radius: 999px;
+            overflow: hidden;
+            margin-top: 0.5rem;
+        }
+
+        .upload-summary-bar-fill {
+            height: 100%;
+            background: #93243f;
+            border-radius: 999px;
+            width: 0%;
+            transition: width 0.2s;
+        }
+
+        .upload-summary-bar-fill.complete {
+            background: #16a34a;
+        }
+
+        /* Tree row */
+        .tree-row {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.55rem 0.5rem;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            user-select: none;
+        }
+
+        .tree-row:hover {
+            background: #f3f4f6;
+        }
+
+        .tree-row.folder {
+            cursor: pointer;
+            font-weight: 600;
+            color: #292D32;
+        }
+
+        .tree-row.file {
+            cursor: default;
+        }
+
+        .tree-caret {
+            width: 16px;
+            height: 16px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #6b7280;
+            transition: transform 0.15s;
+        }
+
+        .tree-caret.expanded {
+            transform: rotate(90deg);
+        }
+
+        .tree-caret svg {
+            width: 14px;
+            height: 14px;
+        }
+
+        .tree-icon {
+            width: 22px;
+            height: 28px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .tree-icon.folder-icon {
+            width: 22px;
+            height: 22px;
+            background: linear-gradient(180deg, #94a3b8, #64748b);
+            box-shadow: 0 1px 2px rgba(71, 85, 105, 0.2), inset 0 1px 0 rgba(255,255,255,0.3);
+            border-radius: 5px;
+            color: #ffffff;
+        }
+
+        .tree-icon.folder-icon svg {
+            width: 14px;
+            height: auto;
+        }
+
+        /* File type badge — urmauur-inspired document card with corner banner */
+        .tree-badge {
+            position: relative;
+            width: 20px;
+            height: 26px;
+            flex-shrink: 0;
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 3px;
+            padding: 2px 2px;
+            display: flex;
+            flex-direction: column;
+            gap: 1px;
+            margin-right: 4px; /* room for the banner that overhangs */
+        }
+
+        .tree-badge-line {
+            height: 1px;
+            background: rgba(0,0,0,0.08);
+            border-radius: 1px;
+        }
+
+        .tree-badge-line.bold {
+            background: rgba(0,0,0,0.18);
+        }
+
+        .tree-badge-banner {
+            position: absolute;
+            right: -4px;
+            bottom: 2px;
+            font-size: 0.34rem;
+            font-weight: 700;
+            color: #ffffff;
+            text-transform: uppercase;
+            padding: 1px 2px;
+            border-radius: 2px;
+            letter-spacing: 0.02em;
+            line-height: 1.2;
+            box-shadow: 0 1px 1px rgba(0,0,0,0.1);
+        }
+
+        .tree-row-body {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .tree-row-name {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .tree-row-stats {
+            font-size: 0.75rem;
+            color: #6b7280;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .tree-row-action {
+            width: 26px;
+            height: 26px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            color: #9ca3af;
+            flex-shrink: 0;
+            opacity: 0;
+            transition: opacity 0.15s;
+        }
+
+        .tree-row:hover .tree-row-action {
+            opacity: 1;
+        }
+
+        .tree-row-action:hover {
+            background: #e5e7eb;
+            color: #dc2626;
+        }
+
+        .tree-row-action svg {
+            width: 15px;
+            height: 15px;
+        }
+
+        /* File state indicators in tree rows */
+        .tree-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+            font-size: 0.72rem;
+        }
+
+        .tree-status .spinner {
+            width: 10px;
+            height: 10px;
+        }
+
+        .tree-status.uploading { color: #93243f; }
+        .tree-status.done { color: #16a34a; }
+        .tree-status.error { color: #dc2626; }
+
+        .tree-mini-bar {
+            width: 50px;
+            height: 3px;
+            background: #e5e7eb;
+            border-radius: 999px;
+            overflow: hidden;
+        }
+
+        .tree-mini-bar-fill {
+            height: 100%;
+            background: #93243f;
+            transition: width 0.2s;
+        }
+
+        /* Sticky upload bar */
+        .sticky-upload {
+            margin-top: 1rem;
         }
 
         .clear-btn {
             font-size: 0.75rem;
-            color: #f85149;
+            color: #cf222e;
             background: none;
             border: none;
             cursor: pointer;
@@ -171,25 +725,61 @@
         }
 
         .clear-btn:hover {
-            background: rgba(248, 81, 73, 0.1);
+            background: rgba(207, 34, 46, 0.1);
         }
 
         .file-item {
             display: flex;
             align-items: center;
-            justify-content: space-between;
-            padding: 0.5rem 0.75rem;
-            background: #161b22;
-            border: 1px solid #21262d;
-            border-radius: 6px;
-            margin-bottom: 0.35rem;
+            gap: 0.85rem;
+            padding: 0.85rem;
+            background: #EEF1F7;
+            border-radius: 12px;
+            margin-bottom: 0.6rem;
             font-size: 0.85rem;
         }
 
-        .file-item-info {
+        /* Colored file-type badge (PDF-style) */
+        .file-item-badge {
+            width: 38px;
+            height: 44px;
+            flex-shrink: 0;
+            background: #ef4444;
+            border-radius: 6px;
             display: flex;
             align-items: center;
-            gap: 0.5rem;
+            justify-content: center;
+            position: relative;
+            color: #ffffff;
+            font-size: 0.6rem;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.06);
+        }
+
+        .file-item-badge::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 10px;
+            height: 10px;
+            background: #ffffff;
+            clip-path: polygon(0 0, 100% 100%, 0 100%);
+            opacity: 0.25;
+        }
+
+        /* Badge colors by file type */
+        .badge-pdf     { background: #dc2626; }
+        .badge-doc     { background: #3b82f6; }
+        .badge-data    { background: #10b981; }
+        .badge-img     { background: #0ea5e9; }
+        .badge-archive { background: #8b5cf6; }
+        .badge-video   { background: #f97316; }
+        .badge-default { background: #6b7280; }
+
+        .file-item-body {
+            flex: 1;
             min-width: 0;
         }
 
@@ -197,51 +787,127 @@
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+            font-weight: 600;
+            color: #292D32;
+            font-size: 0.9rem;
+            margin-bottom: 0.2rem;
         }
 
-        .file-item-size {
-            color: #484f58;
-            font-size: 0.75rem;
+        .file-item-meta {
+            font-size: 0.78rem;
+            color: #6b7280;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .file-item-meta .dot {
+            color: #d1d5db;
+        }
+
+        .file-item-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
+        /* Spinner for uploading */
+        .spinner {
+            width: 12px;
+            height: 12px;
+            border: 1.5px solid #d1d5db;
+            border-top-color: #93243f;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .check-icon {
+            width: 14px;
+            height: 14px;
+            color: #16a34a;
             flex-shrink: 0;
         }
 
-        .file-item-remove {
-            color: #484f58;
+        .file-item-progress-bg {
+            height: 5px;
+            background: #d8dce5;
+            border-radius: 999px;
+            overflow: hidden;
+            margin-top: 0.5rem;
+        }
+
+        .file-item-progress {
+            height: 100%;
+            background: #93243f;
+            border-radius: 999px;
+            width: 0%;
+            transition: width 0.2s;
+        }
+
+        .file-item.error .file-item-progress {
+            background: #ef4444;
+        }
+
+        /* Cancel / delete action button */
+        .file-item-action {
+            width: 28px;
+            height: 28px;
             background: none;
             border: none;
             cursor: pointer;
-            font-size: 1.1rem;
-            padding: 0 0.3rem;
-            line-height: 1;
-            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            color: #6b7280;
+            flex-shrink: 0;
         }
 
-        .file-item-remove:hover {
-            color: #f85149;
-            background: rgba(248, 81, 73, 0.1);
+        .file-item-action:hover {
+            background: #e5e7eb;
+            color: #292D32;
+        }
+
+        .file-item-action svg {
+            width: 18px;
+            height: 18px;
         }
 
         /* Upload button */
         .upload-btn {
             width: 100%;
             padding: 0.75rem;
-            font-size: 1rem;
+            font-size: 0.95rem;
             font-weight: 600;
-            color: #fff;
-            background: #238636;
-            border: 1px solid #2ea043;
-            border-radius: 8px;
+            color: #ffffff;
+            background: #93243f;
+            border: none;
+            border-radius: 10px;
             cursor: pointer;
-            transition: background 0.15s;
+            transition: background 0.15s, color 0.15s, border-color 0.15s;
         }
 
         .upload-btn:hover:not(:disabled) {
-            background: #2ea043;
+            background: #7a1d34;
         }
 
         .upload-btn:disabled {
             opacity: 0.4;
             cursor: not-allowed;
+        }
+
+        .upload-btn.ghost {
+            background: #ffffff;
+            color: #93243f;
+            border: 1px solid #93243f;
+        }
+
+        .upload-btn.ghost:hover:not(:disabled) {
+            background: #fdf2f5;
         }
 
         /* Progress */
@@ -257,7 +923,7 @@
         .progress-bar-bg {
             width: 100%;
             height: 6px;
-            background: #21262d;
+            background: #eaeef2;
             border-radius: 3px;
             overflow: hidden;
         }
@@ -265,14 +931,14 @@
         .progress-bar {
             height: 100%;
             width: 0%;
-            background: #58a6ff;
+            background: #0969da;
             border-radius: 3px;
             transition: width 0.2s;
         }
 
         .progress-text {
             font-size: 0.8rem;
-            color: #8b949e;
+            color: #57606a;
             margin-top: 0.4rem;
             text-align: center;
         }
@@ -288,14 +954,16 @@
 
         .result.success {
             display: block;
-            background: rgba(35, 134, 54, 0.12);
-            border: 1px solid #238636;
+            background: #dafbe1;
+            border: 1px solid #2da44e;
+            color: #1a7f37;
         }
 
         .result.error {
             display: block;
-            background: rgba(248, 81, 73, 0.12);
-            border: 1px solid #f85149;
+            background: #ffebe9;
+            border: 1px solid #cf222e;
+            color: #cf222e;
         }
 
         .result pre {
@@ -304,27 +972,205 @@
             font-family: monospace;
             font-size: 0.8rem;
             margin-top: 0.5rem;
-            color: #c9d1d9;
+            color: #292D32;
         }
 
         /* Browse section */
-        .browse-section {
-            margin-top: 3rem;
-            padding-top: 2rem;
-            border-top: 1px solid #21262d;
-        }
-
-        .browse-section h2 {
-            font-size: 1.2rem;
+        .browse-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #eef0f4;
             margin-bottom: 1rem;
         }
 
-        .dataset-card {
-            background: #161b22;
-            border: 1px solid #21262d;
+        .browse-header h2 {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #292D32;
+        }
+
+        /* Search + sort toolbar */
+        .datasets-toolbar {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .search-wrap {
+            flex: 1;
+            position: relative;
+        }
+
+        .search-wrap svg {
+            position: absolute;
+            left: 0.65rem;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 14px;
+            height: 14px;
+            color: #A9ACB4;
+            pointer-events: none;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 0.5rem 0.75rem 0.5rem 2rem;
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
             border-radius: 8px;
-            padding: 1rem;
-            margin-bottom: 0.75rem;
+            color: #292D32;
+            font-size: 0.85rem;
+            outline: none;
+            transition: border-color 0.15s, box-shadow 0.15s;
+        }
+
+        .search-input:focus {
+            border-color: #93243f;
+            box-shadow: 0 0 0 3px rgba(147, 36, 63, 0.1);
+        }
+
+        .search-input::placeholder {
+            color: #A9ACB4;
+            font-size: 0.8rem;
+        }
+
+        /* Custom sort dropdown */
+        .sort-wrap {
+            position: relative;
+        }
+
+        .sort-button {
+            padding: 0.5rem 2.1rem 0.5rem 0.75rem;
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            color: #292D32;
+            cursor: pointer;
+            font-family: inherit;
+            white-space: nowrap;
+            transition: border-color 0.15s, box-shadow 0.15s;
+            position: relative;
+            min-width: 140px;
+            text-align: left;
+        }
+
+        .sort-button:hover {
+            border-color: #9ca3af;
+        }
+
+        .sort-wrap.open .sort-button {
+            border-color: #93243f;
+            box-shadow: 0 0 0 3px rgba(147, 36, 63, 0.1);
+        }
+
+        .sort-button::after {
+            content: '';
+            position: absolute;
+            right: 0.75rem;
+            top: 50%;
+            width: 0;
+            height: 0;
+            border-left: 4px solid transparent;
+            border-right: 4px solid transparent;
+            border-top: 5px solid #6b7280;
+            transform: translateY(-50%);
+            transition: transform 0.15s;
+        }
+
+        .sort-wrap.open .sort-button::after {
+            transform: translateY(-50%) rotate(180deg);
+        }
+
+        .sort-menu {
+            position: absolute;
+            top: calc(100% + 4px);
+            right: 0;
+            min-width: 170px;
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+            padding: 4px;
+            z-index: 100;
+            display: none;
+        }
+
+        .sort-wrap.open .sort-menu {
+            display: block;
+        }
+
+        .sort-option {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.45rem 0.75rem;
+            border-radius: 6px;
+            font-size: 0.82rem;
+            color: #292D32;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .sort-option:hover {
+            background: #f3f4f6;
+        }
+
+        .sort-option.selected {
+            color: #93243f;
+            font-weight: 600;
+        }
+
+        .sort-option.selected::after {
+            content: '✓';
+            margin-left: 0.75rem;
+            font-size: 0.85rem;
+        }
+
+        .dataset-list {
+            max-height: calc(100vh - 160px);
+            overflow-y: auto;
+            padding-right: 0.25rem;
+        }
+
+        .dataset-card {
+            background: #EEF1F7;
+            border: 1px solid transparent;
+            border-radius: 12px;
+            padding: 0.85rem;
+            margin-bottom: 0.6rem;
+            transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+            cursor: pointer;
+        }
+
+        .dataset-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+            border-color: #d1d5db;
+        }
+
+        .dataset-card.empty {
+            background: #ffffff;
+            border: 1px dashed #d1d5db;
+        }
+
+        .dataset-card.empty .dataset-card-name {
+            color: #6b7280;
+        }
+
+        .dataset-card-meta {
+            font-size: 0.72rem;
+            color: #A9ACB4;
+            margin-top: 0.4rem;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .dataset-card-meta .dot {
+            color: #d1d5db;
         }
 
         .dataset-card-header {
@@ -332,60 +1178,265 @@
             justify-content: space-between;
             align-items: center;
             margin-bottom: 0.5rem;
+            cursor: pointer;
+            gap: 0.5rem;
+        }
+
+        .dataset-caret {
+            width: 14px;
+            height: 14px;
+            flex-shrink: 0;
+            color: #A9ACB4;
+            transition: transform 0.15s;
+        }
+
+        .dataset-caret.expanded {
+            transform: rotate(90deg);
+        }
+
+        .dataset-delete-btn {
+            width: 26px;
+            height: 26px;
+            border: none;
+            background: none;
+            color: #A9ACB4;
+            cursor: pointer;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            opacity: 0;
+            transition: opacity 0.15s;
+        }
+
+        .dataset-card:hover .dataset-delete-btn {
+            opacity: 1;
+        }
+
+        .dataset-delete-btn:hover {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+
+        .dataset-delete-btn svg {
+            width: 14px;
+            height: 14px;
+        }
+
+        .dataset-detail {
+            margin-top: 0.75rem;
+            padding-top: 0.75rem;
+            border-top: 1px solid #d8dce5;
+        }
+
+        .session-row {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.35rem 0.25rem;
+            font-size: 0.8rem;
+            border-radius: 6px;
+        }
+
+        .session-row:hover {
+            background: rgba(255,255,255,0.5);
+        }
+
+        .session-row-name {
+            font-weight: 500;
+            color: #292D32;
+            flex: 1;
+            min-width: 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .session-row-stats {
+            font-size: 0.72rem;
+            color: #6b7280;
+            flex-shrink: 0;
+        }
+
+        .session-delete-btn {
+            width: 22px;
+            height: 22px;
+            border: none;
+            background: none;
+            color: #A9ACB4;
+            cursor: pointer;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            opacity: 0;
+        }
+
+        .session-row:hover .session-delete-btn {
+            opacity: 1;
+        }
+
+        .session-delete-btn:hover {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+
+        .session-delete-btn svg {
+            width: 13px;
+            height: 13px;
+        }
+
+        .file-link {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.25rem 0.75rem 0.25rem 1.75rem;
+            font-size: 0.76rem;
+            color: #4b5563;
+            text-decoration: none;
+            border-radius: 4px;
+        }
+
+        .file-link:hover {
+            background: rgba(255,255,255,0.6);
+            color: #292D32;
+        }
+
+        .file-link-name {
+            flex: 1;
+            min-width: 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .file-link-size {
+            font-size: 0.7rem;
+            color: #A9ACB4;
+            flex-shrink: 0;
         }
 
         .dataset-card-name {
             font-weight: 600;
-            font-size: 1rem;
+            font-size: 0.9rem;
+            color: #292D32;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .dataset-card-stats {
-            font-size: 0.8rem;
-            color: #8b949e;
+            font-size: 0.75rem;
+            color: #6b7280;
+            flex-shrink: 0;
+            white-space: nowrap;
+            margin-left: 0.5rem;
         }
 
         .session-tag {
             display: inline-block;
             padding: 0.2rem 0.55rem;
-            background: #21262d;
+            background: #ffffff;
             border-radius: 12px;
-            font-size: 0.75rem;
-            color: #8b949e;
+            font-size: 0.7rem;
+            color: #4b5563;
             margin: 0.15rem 0.2rem 0.15rem 0;
+            font-weight: 500;
         }
 
         .empty-state {
             text-align: center;
-            color: #484f58;
+            color: #A9ACB4;
             padding: 2rem;
             font-size: 0.9rem;
+            grid-column: 1 / -1; /* span all columns of a grid parent */
         }
 
         .refresh-btn {
             font-size: 0.8rem;
-            color: #58a6ff;
-            background: none;
-            border: 1px solid #30363d;
-            padding: 0.35rem 0.75rem;
-            border-radius: 6px;
+            font-weight: 500;
+            color: #292D32;
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            padding: 0.4rem 0.85rem;
+            border-radius: 8px;
             cursor: pointer;
+            transition: background 0.15s, border-color 0.15s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
         }
 
         .refresh-btn:hover {
-            background: rgba(88, 166, 255, 0.08);
+            background: #f9fafb;
+            border-color: #9ca3af;
+        }
+
+        .refresh-btn svg {
+            width: 14px;
+            height: auto;
+            color: #6b7280;
+        }
+
+        .refresh-btn.icon-only {
+            padding: 0;
+            width: 32px;
+            height: 32px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .refresh-btn.icon-only svg {
+            width: 16px;
+            height: 16px;
+            color: #6b7280;
+            display: block;
+        }
+
+        .refresh-btn.icon-only.spinning svg {
+            animation: spin-once 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        @keyframes spin-once {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
         }
     </style>
 </head>
 <body>
+    <div class="page">
+    <div class="top-row">
     <div class="container">
-        <h1>UOAIS Data Upload</h1>
-        <p class="subtitle">Drag & drop files to upload to the GPU server</p>
+        <!-- Panel header -->
+        <div class="panel-header">
+            <div class="panel-header-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <polyline points="17 8 12 3 7 8"/>
+                    <line x1="12" y1="3" x2="12" y2="15"/>
+                </svg>
+            </div>
+            <div class="panel-header-text">
+                <div class="panel-header-title">Upload files</div>
+                <div class="panel-header-subtitle">Select and upload the files of your choice</div>
+            </div>
+            <button class="panel-header-close" id="leftPanelClose" onclick="clearFiles()" title="Clear all">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"/>
+                    <line x1="15" y1="9" x2="9" y2="15"/>
+                    <line x1="9" y1="9" x2="15" y2="15"/>
+                </svg>
+            </button>
+        </div>
 
-        <!-- Dataset / Session -->
+        <!-- Dataset / Session (compact) -->
         <div class="fields">
             <div class="field">
-                <label>Dataset name *</label>
-                <input type="text" id="dataset" placeholder="e.g. bottle_v1, l515_captures">
+                <label>Dataset name (optional)</label>
+                <input type="text" id="dataset" placeholder="auto-generated if empty">
             </div>
             <div class="field">
                 <label>Session (optional)</label>
@@ -395,7 +1446,7 @@
 
         <!-- Metadata -->
         <div class="field-full">
-            <label style="font-size:0.8rem;color:#8b949e;margin-bottom:0.35rem;display:block;font-weight:500;">
+            <label style="font-size:0.8rem;color:#57606a;margin-bottom:0.35rem;display:block;font-weight:500;">
                 Metadata JSON (optional)
             </label>
             <textarea id="metadata" placeholder='{"camera":"L515","resolution":"960x540"}'></textarea>
@@ -403,60 +1454,87 @@
 
         <!-- Drop zone -->
         <div class="dropzone" id="dropzone">
-            <div class="dropzone-icon">+</div>
-            <div class="dropzone-text">
-                <strong>Drop files here</strong> or click to browse
+            <div class="dropzone-icon">
+                <svg viewBox="0 0 46 46" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M14.2988 37.0684H10.6188C4.98376 36.6659 2.45386 32.3342 2.45386 28.4817C2.45386 24.6292 4.98378 20.2784 10.5229 19.8951C11.3088 19.8184 11.9988 20.4317 12.0563 21.2367C12.1138 22.0226 11.5197 22.7126 10.7147 22.7701C6.99635 23.0384 5.32886 25.8367 5.32886 28.5009C5.32886 31.165 6.99635 33.9634 10.7147 34.2317H14.2988C15.0847 34.2317 15.7363 34.8834 15.7363 35.6692C15.7363 36.455 15.0847 37.0684 14.2988 37.0684Z" fill="#292D32"/>
+                    <path d="M31.9506 37.0683C31.9123 37.0683 31.8931 37.0683 31.8548 37.0683C31.069 37.0683 30.3407 36.4167 30.3407 35.6308C30.3407 34.8067 30.954 34.1933 31.759 34.1933C34.1165 34.1933 36.2248 33.3692 37.8732 31.8933C40.8632 29.2867 41.0548 25.53 40.2498 22.885C39.4448 20.2592 37.2023 17.25 33.2923 16.7708C32.6598 16.6942 32.1614 16.215 32.0464 15.5825C31.2798 10.9825 28.8073 7.80083 25.0507 6.65083C21.179 5.44333 16.6556 6.63167 13.8381 9.58333C11.0973 12.4392 10.4648 16.445 12.0556 20.8533C12.3239 21.6008 11.9407 22.425 11.1932 22.6933C10.4457 22.9617 9.6215 22.5783 9.35317 21.8308C7.41733 16.4258 8.29902 11.2508 11.7682 7.60917C15.314 3.89083 21.0065 2.41499 25.894 3.90999C30.379 5.28999 33.5414 8.98916 34.6914 14.1258C38.6014 15.0075 41.7448 17.9783 42.9906 22.08C44.3515 26.5458 43.1248 31.1458 39.7707 34.0592C37.6432 35.9758 34.864 37.0683 31.9506 37.0683Z" fill="#292D32"/>
+                    <path d="M23 42.7034C19.1475 42.7034 15.5442 40.6526 13.57 37.3367C13.3592 37.0109 13.1484 36.6276 12.9759 36.2059C12.3242 34.8451 11.9792 33.2926 11.9792 31.6826C11.9792 25.6067 16.9242 20.6617 23 20.6617C29.0758 20.6617 34.0208 25.6067 34.0208 31.6826C34.0208 33.3117 33.6759 34.8451 32.9859 36.2634C32.8325 36.6276 32.6217 37.0109 32.3917 37.3751C30.4559 40.6526 26.8525 42.7034 23 42.7034ZM23 23.5367C18.515 23.5367 14.8542 27.1976 14.8542 31.6826C14.8542 32.8709 15.1033 33.9826 15.5825 34.9984C15.7358 35.3242 15.87 35.5926 16.0233 35.8417C17.48 38.3142 20.1441 39.8284 22.9808 39.8284C25.8175 39.8284 28.4816 38.3142 29.9191 35.8801C30.0916 35.5926 30.245 35.3242 30.36 35.0559C30.8775 34.0017 31.1266 32.8901 31.1266 31.7017C31.1458 27.1976 27.485 23.5367 23 23.5367Z" fill="#292D32"/>
+                    <path d="M21.9073 35.0174C21.5431 35.0174 21.179 34.8833 20.8915 34.5958L18.9939 32.6983C18.4381 32.1424 18.4381 31.2224 18.9939 30.6666C19.5498 30.1108 20.4698 30.1108 21.0256 30.6666L21.9457 31.5866L25.0123 28.7499C25.6065 28.2133 26.5073 28.2516 27.044 28.8266C27.5806 29.4016 27.5423 30.3216 26.9673 30.8583L22.8848 34.6341C22.5973 34.8833 22.2523 35.0174 21.9073 35.0174Z" fill="#292D32"/>
+                </svg>
             </div>
-            <div class="dropzone-hint">Any file type — PNG, NPY, EXR, PLY, BAG, JSON, etc.</div>
-            <input type="file" id="fileInput" multiple>
+            <div class="dropzone-text">Choose a file or drag &amp; drop it here</div>
+            <div class="dropzone-hint">Any file type or folder, structure preserved on the server</div>
+            <button type="button" class="browse-btn" id="browseBtn">Browse File</button>
+            <input type="file" id="fileInput" multiple style="display:none;">
+            <input type="file" id="folderInput" webkitdirectory directory multiple style="display:none;">
         </div>
 
-        <!-- File list -->
-        <div class="file-list" id="fileList" style="display:none;">
-            <div class="file-list-header">
-                <h3 id="fileCount">0 files selected</h3>
-                <button class="clear-btn" onclick="clearFiles()">Clear all</button>
-            </div>
-            <div id="fileItems"></div>
-        </div>
+    </div><!-- /.container -->
 
-        <!-- Upload button -->
-        <button class="upload-btn" id="uploadBtn" disabled onclick="upload()">Upload</button>
+    <!-- Right workspace panel (swaps: upload preview / dataset detail / empty) -->
+    <aside class="detail-panel" id="detailPanel"></aside>
 
-        <!-- Progress -->
-        <div class="progress-wrap" id="progress">
-            <div class="progress-bar-bg">
-                <div class="progress-bar" id="progressBar"></div>
-            </div>
-            <div class="progress-text" id="progressText">Uploading...</div>
-        </div>
+    </div><!-- /.top-row -->
 
-        <!-- Result -->
-        <div class="result" id="result">
-            <div id="resultMessage"></div>
-            <pre id="resultDetail"></pre>
+    <!-- Datasets list (bottom, full width) -->
+    <section class="datasets-panel">
+        <div class="datasets-header">
+            <h2>Datasets on server</h2>
+            <button class="refresh-btn icon-only" onclick="spinThis(this); loadDatasets();" title="Refresh">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="23 4 23 10 17 10"/>
+                    <polyline points="1 20 1 14 7 14"/>
+                    <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+                </svg>
+            </button>
         </div>
+        <div class="datasets-toolbar">
+            <div class="search-wrap">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="11" cy="11" r="8"/>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                </svg>
+                <input type="text" class="search-input" id="datasetSearch" placeholder="Search datasets...">
+            </div>
+            <div class="sort-wrap" id="sortWrap">
+                <button type="button" class="sort-button" id="sortButton">
+                    <span id="sortLabel">Newest first</span>
+                </button>
+                <div class="sort-menu" id="sortMenu">
+                    <div class="sort-option" data-sort="modified_desc">Newest first</div>
+                    <div class="sort-option" data-sort="modified_asc">Oldest first</div>
+                    <div class="sort-option" data-sort="name_asc">Name A–Z</div>
+                    <div class="sort-option" data-sort="name_desc">Name Z–A</div>
+                    <div class="sort-option" data-sort="size_desc">Largest first</div>
+                    <div class="sort-option" data-sort="size_asc">Smallest first</div>
+                </div>
+            </div>
+        </div>
+        <div class="datasets-grid" id="datasetsList">
+            <div class="empty-state">Loading...</div>
+        </div>
+    </section>
 
-        <!-- Browse datasets -->
-        <div class="browse-section">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
-                <h2>Datasets on server</h2>
-                <button class="refresh-btn" onclick="loadDatasets()">Refresh</button>
-            </div>
-            <div id="datasetsList">
-                <div class="empty-state">Loading...</div>
-            </div>
-        </div>
-    </div>
+    </div><!-- /.page -->
 
     <script>
+        // Each entry: { file: File, path: string }  where path is the relative path (e.g. "000001/rgb/001.png")
         let selectedFiles = [];
 
         // --- Drop zone ---
         const dropzone = document.getElementById('dropzone');
         const fileInput = document.getElementById('fileInput');
+        const folderInput = document.getElementById('folderInput');
+        const browseBtn = document.getElementById('browseBtn');
 
-        dropzone.addEventListener('click', () => fileInput.click());
+        browseBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            fileInput.click();
+        });
+        dropzone.addEventListener('click', (e) => {
+            if (e.target === browseBtn) return;
+            fileInput.click();
+        });
 
         dropzone.addEventListener('dragover', (e) => {
             e.preventDefault();
@@ -467,36 +1545,168 @@
             dropzone.classList.remove('dragover');
         });
 
-        dropzone.addEventListener('drop', (e) => {
+        dropzone.addEventListener('drop', async (e) => {
             e.preventDefault();
             dropzone.classList.remove('dragover');
-            addFiles(e.dataTransfer.files);
+            const items = e.dataTransfer.items;
+            if (items && items.length && items[0].webkitGetAsEntry) {
+                // Walk directory entries to preserve structure
+                const entries = [];
+                for (const item of items) {
+                    const entry = item.webkitGetAsEntry();
+                    if (entry) entries.push(entry);
+                }
+                const files = [];
+                for (const entry of entries) {
+                    await walkEntry(entry, '', files);
+                }
+                addFilesWithPaths(files);
+            } else {
+                // Fallback: regular file drop
+                addFilesFromList(e.dataTransfer.files);
+            }
         });
 
+        // Recursively walk a FileSystemEntry (file or directory) and collect {file, path}
+        function walkEntry(entry, basePath, out) {
+            return new Promise((resolve) => {
+                if (entry.isFile) {
+                    entry.file((file) => {
+                        out.push({ file, path: basePath + file.name });
+                        resolve();
+                    }, () => resolve());
+                } else if (entry.isDirectory) {
+                    const reader = entry.createReader();
+                    const readAll = () => {
+                        reader.readEntries(async (entries) => {
+                            if (entries.length === 0) {
+                                resolve();
+                                return;
+                            }
+                            for (const e of entries) {
+                                await walkEntry(e, basePath + entry.name + '/', out);
+                            }
+                            readAll();  // keep reading (readEntries returns in batches)
+                        }, () => resolve());
+                    };
+                    readAll();
+                } else {
+                    resolve();
+                }
+            });
+        }
+
         fileInput.addEventListener('change', () => {
-            addFiles(fileInput.files);
+            addFilesFromList(fileInput.files);
             fileInput.value = '';
         });
 
-        function addFiles(fileListObj) {
-            for (const f of fileListObj) {
-                // Avoid duplicates by name+size
-                const exists = selectedFiles.some(
-                    s => s.name === f.name && s.size === f.size
-                );
-                if (!exists) selectedFiles.push(f);
+        folderInput.addEventListener('change', () => {
+            // webkitdirectory populates webkitRelativePath on each file
+            const files = [];
+            for (const f of folderInput.files) {
+                files.push({ file: f, path: f.webkitRelativePath || f.name });
             }
+            addFilesWithPaths(files);
+            folderInput.value = '';
+        });
+
+        function addFilesFromList(fileListObj) {
+            const files = [];
+            for (const f of fileListObj) {
+                files.push({ file: f, path: f.webkitRelativePath || f.name });
+            }
+            addFilesWithPaths(files);
+        }
+
+        function addFilesWithPaths(items) {
+            for (const item of items) {
+                const exists = selectedFiles.some(
+                    s => s.path === item.path && s.file.size === item.file.size
+                );
+                if (!exists) selectedFiles.push(item);
+            }
+            autofillDatasetName();
             renderFiles();
         }
+
+        // Return the unique top-level folder names across selectedFiles (empty if files at root)
+        function topLevelFolders() {
+            const set = new Set();
+            for (const item of selectedFiles) {
+                const parts = item.path.split('/').filter(Boolean);
+                if (parts.length > 1) set.add(parts[0]);
+            }
+            return [...set];
+        }
+
+        // If the user hasn't typed a dataset name and all files share one top folder,
+        // auto-fill the input with that folder name.
+        function autofillDatasetName() {
+            const input = document.getElementById('dataset');
+            if (!input) return;
+            // Don't overwrite explicit user input
+            if (input.value.trim() && !input.dataset.autofilled) return;
+
+            const folders = topLevelFolders();
+            if (folders.length === 1) {
+                input.value = folders[0];
+                input.dataset.autofilled = 'true';
+            } else if (folders.length === 0 && input.dataset.autofilled) {
+                // No folder context anymore — clear the auto-filled value
+                input.value = '';
+                delete input.dataset.autofilled;
+            }
+        }
+
+        // Clear the autofill flag when the user types anything into the dataset field
+        document.addEventListener('DOMContentLoaded', () => {
+            const input = document.getElementById('dataset');
+            if (input) input.addEventListener('input', () => { delete input.dataset.autofilled; });
+        });
 
         function removeFile(index) {
             selectedFiles.splice(index, 1);
+            autofillDatasetName();
             renderFiles();
         }
 
-        function clearFiles() {
-            selectedFiles = [];
+        // Remove all files whose path starts with folderPath + '/'
+        function removeFolder(folderPath) {
+            const prefix = folderPath.endsWith('/') ? folderPath : folderPath + '/';
+            selectedFiles = selectedFiles.filter(item => !item.path.startsWith(prefix));
+            expandedFolders.delete(folderPath);
+            autofillDatasetName();
             renderFiles();
+        }
+
+        // Track in-flight XHRs so we can abort them if the user cancels
+        const activeUploadXHRs = new Set();
+
+        // Keep the left panel's X button in sync with upload state
+        function syncLeftClose() {
+            const btn = document.getElementById('leftPanelClose');
+            if (!btn) return;
+            btn.disabled = isUploading;
+            btn.style.opacity = isUploading ? '0.35' : '';
+            btn.style.cursor = isUploading ? 'not-allowed' : '';
+            btn.title = isUploading ? 'Use the right panel to cancel' : 'Clear all';
+        }
+
+        function clearFiles() {
+            if (isUploading) {
+                if (!confirm('An upload is in progress. Cancel and remove all files?')) return;
+                // Abort all in-flight requests
+                for (const xhr of activeUploadXHRs) {
+                    try { xhr.abort(); } catch (e) {}
+                }
+                activeUploadXHRs.clear();
+                isUploading = false;
+                isPaused = false;
+            }
+            selectedFiles = [];
+            syncLeftClose();
+            renderFilesImmediate();
         }
 
         function formatSize(bytes) {
@@ -505,131 +1715,845 @@
             return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
         }
 
-        function renderFiles() {
-            const list = document.getElementById('fileList');
-            const items = document.getElementById('fileItems');
-            const count = document.getElementById('fileCount');
-            const btn = document.getElementById('uploadBtn');
-
-            if (selectedFiles.length === 0) {
-                list.style.display = 'none';
-                btn.disabled = true;
-                return;
-            }
-
-            list.style.display = 'block';
-            count.textContent = selectedFiles.length + ' file' + (selectedFiles.length > 1 ? 's' : '') + ' selected';
-
-            items.innerHTML = selectedFiles.map((f, i) => `
-                <div class="file-item">
-                    <div class="file-item-info">
-                        <span class="file-item-name">${f.name}</span>
-                        <span class="file-item-size">${formatSize(f.size)}</span>
-                    </div>
-                    <button class="file-item-remove" onclick="removeFile(${i})">&times;</button>
-                </div>
-            `).join('');
-
-            btn.disabled = false;
+        // Trigger a one-shot CSS spin animation on an element
+        function spinThis(el) {
+            if (!el) return;
+            el.classList.remove('spinning');
+            // Force reflow so the animation restarts on rapid clicks
+            void el.offsetWidth;
+            el.classList.add('spinning');
+            setTimeout(() => el.classList.remove('spinning'), 650);
         }
 
-        // --- Upload ---
-        async function upload() {
-            const dataset = document.getElementById('dataset').value.trim();
-            if (!dataset) {
-                alert('Please enter a dataset name.');
-                return;
-            }
-            if (selectedFiles.length === 0) return;
+        // --- Badge label + color class based on file extension ---
+        function badgeFor(name) {
+            const ext = (name.split('.').pop() || '').toLowerCase();
+            const map = {
+                pdf: { label: 'PDF', cls: 'badge-pdf' },
+                doc: { label: 'DOC', cls: 'badge-doc' },
+                docx: { label: 'DOC', cls: 'badge-doc' },
+                txt: { label: 'TXT', cls: 'badge-doc' },
+                md: { label: 'MD', cls: 'badge-doc' },
+                json: { label: 'JSON', cls: 'badge-data' },
+                yaml: { label: 'YAML', cls: 'badge-data' },
+                yml: { label: 'YAML', cls: 'badge-data' },
+                csv: { label: 'CSV', cls: 'badge-data' },
+                xml: { label: 'XML', cls: 'badge-data' },
+                png: { label: 'PNG', cls: 'badge-img' },
+                jpg: { label: 'JPG', cls: 'badge-img' },
+                jpeg: { label: 'JPG', cls: 'badge-img' },
+                gif: { label: 'GIF', cls: 'badge-img' },
+                webp: { label: 'WEBP', cls: 'badge-img' },
+                bmp: { label: 'BMP', cls: 'badge-img' },
+                tiff: { label: 'TIFF', cls: 'badge-img' },
+                svg: { label: 'SVG', cls: 'badge-img' },
+                npy: { label: 'NPY', cls: 'badge-data' },
+                exr: { label: 'EXR', cls: 'badge-img' },
+                ply: { label: 'PLY', cls: 'badge-data' },
+                bag: { label: 'BAG', cls: 'badge-archive' },
+                mp4: { label: 'MP4', cls: 'badge-video' },
+                mov: { label: 'MOV', cls: 'badge-video' },
+                avi: { label: 'AVI', cls: 'badge-video' },
+                zip: { label: 'ZIP', cls: 'badge-archive' },
+                tar: { label: 'TAR', cls: 'badge-archive' },
+                gz: { label: 'GZ', cls: 'badge-archive' },
+            };
+            return map[ext] || { label: (ext || 'FILE').toUpperCase().slice(0, 4), cls: 'badge-default' };
+        }
 
-            const session = document.getElementById('session').value.trim();
+        // Icons used inline in markup
+        const ICON_CANCEL = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="15" y1="9" x2="9" y2="15"/>
+            <line x1="9" y1="9" x2="15" y2="15"/>
+        </svg>`;
+        const ICON_TRASH = `<svg viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M26.25 8.41247C26.225 8.41247 26.1875 8.41247 26.15 8.41247C19.5375 7.74997 12.9375 7.49997 6.40002 8.16247L3.85002 8.41247C3.32502 8.46247 2.86252 8.08747 2.81252 7.56247C2.76252 7.03747 3.13752 6.58747 3.65002 6.53747L6.20002 6.28747C12.85 5.61247 19.5875 5.87497 26.3375 6.53747C26.85 6.58747 27.225 7.04997 27.175 7.56247C27.1375 8.04997 26.725 8.41247 26.25 8.41247Z" fill="currentColor"/>
+            <path d="M10.625 7.15C10.575 7.15 10.525 7.15 10.4625 7.1375C9.96251 7.05 9.61251 6.5625 9.70001 6.0625L9.97501 4.425C10.175 3.225 10.45 1.5625 13.3625 1.5625H16.6375C19.5625 1.5625 19.8375 3.2875 20.025 4.4375L20.3 6.0625C20.3875 6.575 20.0375 7.0625 19.5375 7.1375C19.025 7.225 18.5375 6.875 18.4625 6.375L18.1875 4.75C18.0125 3.6625 17.975 3.45 16.65 3.45H13.375C12.05 3.45 12.025 3.625 11.8375 4.7375L11.55 6.3625C11.475 6.825 11.075 7.15 10.625 7.15Z" fill="currentColor"/>
+            <path d="M19.0125 28.4375H10.9875C6.625 28.4375 6.45 26.025 6.3125 24.075L5.5 11.4875C5.4625 10.975 5.8625 10.525 6.375 10.4875C6.9 10.4625 7.3375 10.85 7.375 11.3625L8.1875 23.95C8.325 25.85 8.375 26.5625 10.9875 26.5625H19.0125C21.6375 26.5625 21.6875 25.85 21.8125 23.95L22.625 11.3625C22.6625 10.85 23.1125 10.4625 23.625 10.4875C24.1375 10.525 24.5375 10.9625 24.5 11.4875L23.6875 24.075C23.55 26.025 23.375 28.4375 19.0125 28.4375Z" fill="currentColor"/>
+            <path d="M17.075 21.5625H12.9125C12.4 21.5625 11.975 21.1375 11.975 20.625C11.975 20.1125 12.4 19.6875 12.9125 19.6875H17.075C17.5875 19.6875 18.0125 20.1125 18.0125 20.625C18.0125 21.1375 17.5875 21.5625 17.075 21.5625Z" fill="currentColor"/>
+            <path d="M18.125 16.5625H11.875C11.3625 16.5625 10.9375 16.1375 10.9375 15.625C10.9375 15.1125 11.3625 14.6875 11.875 14.6875H18.125C18.6375 14.6875 19.0625 15.1125 19.0625 15.625C19.0625 16.1375 18.6375 16.5625 18.125 16.5625Z" fill="currentColor"/>
+        </svg>`;
+        const ICON_CHECK = `<svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10" fill="#16a34a" stroke="#16a34a"/>
+            <polyline points="8 12 11 15 16 9" stroke="#ffffff"/>
+        </svg>`;
+
+        // --- Tree state ---
+        // Expanded folder paths; everything is collapsed by default for big uploads.
+        let expandedFolders = new Set();
+
+        // Build a hierarchical tree from the flat selectedFiles.
+        // Each folder node: { type:'folder', name, path, children:[], files:[fileRefs] }
+        // Each file node:   { type:'file', name, path, item, index }
+        function buildTree() {
+            const root = { type: 'folder', name: '', path: '', children: new Map() };
+            selectedFiles.forEach((item, i) => {
+                const parts = item.path.split('/').filter(Boolean);
+                let node = root;
+                for (let p = 0; p < parts.length - 1; p++) {
+                    const part = parts[p];
+                    const subPath = parts.slice(0, p + 1).join('/');
+                    if (!node.children.has(part)) {
+                        node.children.set(part, {
+                            type: 'folder',
+                            name: part,
+                            path: subPath,
+                            children: new Map(),
+                        });
+                    }
+                    node = node.children.get(part);
+                }
+                // Leaf file
+                const fileName = parts[parts.length - 1];
+                node.children.set('__file_' + i, {
+                    type: 'file',
+                    name: fileName,
+                    path: item.path,
+                    item: item,
+                    index: i,
+                });
+            });
+            return root;
+        }
+
+        // Compute aggregate stats for a folder subtree
+        function folderStats(node) {
+            let fileCount = 0;
+            let totalSize = 0;
+            let doneCount = 0;
+            let uploadingCount = 0;
+            let errorCount = 0;
+            let uploadedBytes = 0;
+            const walk = (n) => {
+                for (const child of n.children.values()) {
+                    if (child.type === 'file') {
+                        fileCount++;
+                        totalSize += child.item.file.size;
+                        if (child.item.status === 'done') {
+                            doneCount++;
+                            uploadedBytes += child.item.file.size;
+                        } else if (child.item.status === 'uploading') {
+                            uploadingCount++;
+                            uploadedBytes += child.item.file.size * ((child.item.progress || 0) / 100);
+                        } else if (child.item.status === 'error') {
+                            errorCount++;
+                        }
+                    } else {
+                        walk(child);
+                    }
+                }
+            };
+            walk(node);
+            return { fileCount, totalSize, doneCount, uploadingCount, errorCount, uploadedBytes };
+        }
+
+        const ICON_CARET = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="9 18 15 12 9 6"/>
+        </svg>`;
+        const ICON_FOLDER = `<svg viewBox="0 0 20 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M18 2H10L8.59 0.59C8.21 0.21 7.7 0 7.17 0H2C0.9 0 0.00999999 0.9 0.00999999 2L0 14C0 15.1 0.9 16 2 16H18C19.1 16 20 15.1 20 14V4C20 2.9 19.1 2 18 2ZM11 9V12C11 12.55 10.55 13 10 13C9.45 13 9 12.55 9 12V9H7.21C6.76 9 6.54 8.46 6.86 8.15L9.66 5.36C9.86 5.16 10.17 5.17 10.37 5.36L13.16 8.15C13.46 8.46 13.24 9 12.8 9H11Z"/></svg>`;
+
+        // Render a folder row HTML
+        function renderFolderRow(node, depth) {
+            const stats = folderStats(node);
+            const isExpanded = expandedFolders.has(node.path);
+            const uploadingTotal = stats.uploadingCount + stats.doneCount + stats.errorCount;
+            const showProgress = uploadingTotal > 0 && stats.doneCount < stats.fileCount;
+            const pct = stats.fileCount > 0
+                ? Math.round((stats.uploadedBytes / Math.max(stats.totalSize, 1)) * 100)
+                : 0;
+
+            let statusHtml = '';
+            if (stats.errorCount > 0) {
+                statusHtml = `<span class="tree-status error">${stats.errorCount} failed</span>`;
+            } else if (showProgress) {
+                statusHtml = `
+                    <div class="tree-mini-bar"><div class="tree-mini-bar-fill" style="width:${pct}%"></div></div>
+                    <span class="tree-status uploading">${stats.doneCount}/${stats.fileCount}</span>`;
+            } else if (stats.doneCount === stats.fileCount && stats.fileCount > 0) {
+                statusHtml = `<span class="tree-status done">${ICON_CHECK}Done</span>`;
+            }
+
+            const safePath = node.path.replace(/'/g, "\\'");
+            return `
+                <div class="tree-row folder" style="padding-left:${0.5 + depth * 1}rem"
+                     onclick="toggleFolder('${safePath}')">
+                    <span class="tree-caret ${isExpanded ? 'expanded' : ''}">${ICON_CARET}</span>
+                    <div class="tree-icon folder-icon">${ICON_FOLDER}</div>
+                    <div class="tree-row-body">
+                        <div class="tree-row-name">${node.name}</div>
+                    </div>
+                    <div class="tree-row-stats">
+                        ${statusHtml}
+                        <span>${stats.fileCount} file${stats.fileCount > 1 ? 's' : ''}</span>
+                        <span>·</span>
+                        <span>${formatSize(stats.totalSize)}</span>
+                    </div>
+                    <button class="tree-row-action" onclick="event.stopPropagation(); removeFolder('${safePath}')" title="Remove folder">${ICON_TRASH}</button>
+                </div>`;
+        }
+
+        // Render a file row HTML
+        function renderFileRow(node, depth) {
+            const item = node.item;
+            const badge = badgeFor(item.path);
+            const sizeLabel = formatSize(item.file.size);
+
+            let statusHtml = '';
+            if (item.status === 'uploading') {
+                statusHtml = `
+                    <div class="tree-mini-bar"><div class="tree-mini-bar-fill" style="width:${item.progress || 0}%"></div></div>
+                    <span class="tree-status uploading"><span class="spinner"></span>${item.progress || 0}%</span>`;
+            } else if (item.status === 'done') {
+                statusHtml = `<span class="tree-status done">${ICON_CHECK}Done</span>`;
+            } else if (item.status === 'error') {
+                statusHtml = `<span class="tree-status error">Failed</span>`;
+            }
+
+            return `
+                <div class="tree-row file" style="padding-left:${0.5 + depth * 1}rem">
+                    <span class="tree-caret" style="visibility:hidden"></span>
+                    <div class="tree-badge">
+                        <div class="tree-badge-line bold" style="width:70%"></div>
+                        <div class="tree-badge-line" style="width:50%"></div>
+                        <div class="tree-badge-line" style="width:60%"></div>
+                        <div class="tree-badge-line" style="width:40%"></div>
+                        <span class="tree-badge-banner ${badge.cls}">${badge.label}</span>
+                    </div>
+                    <div class="tree-row-body">
+                        <div class="tree-row-name">${node.name}</div>
+                    </div>
+                    <div class="tree-row-stats">
+                        ${statusHtml}
+                        <span>${sizeLabel}</span>
+                    </div>
+                    <button class="tree-row-action" onclick="removeFile(${node.index})" title="Remove">${ICON_TRASH}</button>
+                </div>`;
+        }
+
+        // Depth-first render of visible rows
+        function renderNode(node, depth, out) {
+            const sorted = [...node.children.values()].sort((a, b) => {
+                if (a.type !== b.type) return a.type === 'folder' ? -1 : 1;
+                return a.name.localeCompare(b.name);
+            });
+            for (const child of sorted) {
+                if (child.type === 'folder') {
+                    out.push(renderFolderRow(child, depth));
+                    if (expandedFolders.has(child.path)) {
+                        renderNode(child, depth + 1, out);
+                    }
+                } else {
+                    out.push(renderFileRow(child, depth));
+                }
+            }
+        }
+
+        function toggleFolder(path) {
+            if (expandedFolders.has(path)) expandedFolders.delete(path);
+            else expandedFolders.add(path);
+            renderFiles();
+        }
+
+        // Throttled re-render — upload progress fires many events per second.
+        // Rewriting innerHTML too fast destroys buttons mid-click, causes hover flicker,
+        // and swallows pointer events. Coalesce to one render per animation frame.
+        let _renderScheduled = false;
+        function renderFiles() {
+            if (_renderScheduled) return;
+            _renderScheduled = true;
+            requestAnimationFrame(() => {
+                _renderScheduled = false;
+                renderRightPanel();
+            });
+        }
+
+        // Force an immediate render (for click handlers that must update UI now)
+        function renderFilesImmediate() {
+            _renderScheduled = false;
+            renderRightPanel();
+        }
+
+        // Shared panel header used by the right workspace (matches left panel's style)
+        function renderPanelHeader({ iconSvg, title, subtitle, actionsHtml }) {
+            return `
+                <div class="panel-header">
+                    <div class="panel-header-icon">${iconSvg}</div>
+                    <div class="panel-header-text">
+                        <div class="panel-header-title">${title}</div>
+                        <div class="panel-header-subtitle">${subtitle}</div>
+                    </div>
+                    ${actionsHtml || ''}
+                </div>`;
+        }
+
+        // Generate the HTML for the "upload preview" state
+        function renderUploadPreviewHTML() {
+            const totalBytes = selectedFiles.reduce((s, f) => s + f.file.size, 0);
+            const doneCount = selectedFiles.filter(f => f.status === 'done').length;
+            const errorCount = selectedFiles.filter(f => f.status === 'error').length;
+            const uploadingCount = selectedFiles.filter(f => f.status === 'uploading').length;
+            const uploadedBytes = selectedFiles.reduce((s, f) => {
+                if (f.status === 'done') return s + f.file.size;
+                if (f.status === 'uploading') return s + f.file.size * ((f.progress || 0) / 100);
+                return s;
+            }, 0);
+            const pct = Math.round((uploadedBytes / Math.max(totalBytes, 1)) * 100);
+            const allDone = doneCount === selectedFiles.length && selectedFiles.length > 0;
+
+            let summaryMeta;
+            if (uploadingCount > 0 || doneCount > 0) {
+                summaryMeta = `${doneCount}/${selectedFiles.length} uploaded`;
+                if (errorCount > 0) summaryMeta += ` · <span style="color:#dc2626;">${errorCount} failed</span>`;
+            } else {
+                summaryMeta = `${selectedFiles.length} file${selectedFiles.length > 1 ? 's' : ''} · ${formatSize(totalBytes)}`;
+            }
+            const showBar = uploadingCount > 0 || doneCount > 0;
+
+            const statusText = allDone ? 'All files uploaded'
+                : isPaused && uploadingCount > 0 ? 'Pausing... (finishing current files)'
+                : isPaused ? 'Paused'
+                : uploadingCount > 0 ? 'Uploading...'
+                : 'Ready to upload';
+
+            const summaryHtml = `
+                <div class="upload-summary">
+                    <div class="upload-summary-line">
+                        <span class="upload-summary-text">${statusText}</span>
+                        <span class="upload-summary-meta">${formatSize(totalBytes)}</span>
+                    </div>
+                    <div class="upload-summary-meta" style="margin-top:0.2rem;">${summaryMeta}</div>
+                    ${showBar ? `
+                        <div class="upload-summary-bar">
+                            <div class="upload-summary-bar-fill ${allDone ? 'complete' : ''}" style="width:${pct}%"></div>
+                        </div>` : ''}
+                </div>`;
+
+            const tree = buildTree();
+            const rows = [];
+            renderNode(tree, 0, rows);
+
+            const hasPending = selectedFiles.some(f => !f.status || f.status === 'error');
+
+            const headerTitle = allDone ? 'Upload complete'
+                : isPaused ? 'Upload paused'
+                : isUploading ? 'Uploading files'
+                : 'Files to upload';
+            const headerSubtitle = `${selectedFiles.length} file${selectedFiles.length === 1 ? '' : 's'} · ${formatSize(totalBytes)}`;
+            const headerIcon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="17 8 12 3 7 8"/>
+                <line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>`;
+            const headerActions = `<button class="panel-header-close" onclick="clearFiles()" title="${isUploading ? 'Cancel upload' : 'Clear all'}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"/>
+                    <line x1="15" y1="9" x2="9" y2="15"/>
+                    <line x1="9" y1="9" x2="15" y2="15"/>
+                </svg>
+            </button>`;
+
+            return renderPanelHeader({
+                iconSvg: headerIcon,
+                title: headerTitle,
+                subtitle: headerSubtitle,
+                actionsHtml: headerActions,
+            }) + `
+                <div class="detail-body" style="padding:0;">
+                    ${summaryHtml}
+                    <div class="file-items">${rows.join('')}</div>
+                </div>
+                <div class="sticky-upload">
+                    ${isUploading ? `
+                        <button class="upload-btn ${isPaused ? '' : 'ghost'}" onclick="togglePause()">
+                            ${isPaused ? 'Resume' : 'Pause'}
+                        </button>
+                    ` : `
+                        <button class="upload-btn" ${!hasPending ? 'disabled' : ''} onclick="upload()">
+                            ${allDone ? 'Done' : 'Upload'}
+                        </button>
+                    `}
+                </div>`;
+        }
+
+        // Right-panel coordinator:
+        // 1. if there are files queued → upload preview
+        // 2. else if a dataset is selected → dataset detail
+        // 3. else → empty state
+        // Also preserves the scroll position across re-renders.
+        function renderRightPanel() {
+            const panel = document.getElementById('detailPanel');
+            const oldBody = panel.querySelector('.detail-body');
+            const savedScroll = oldBody ? oldBody.scrollTop : 0;
+
+            if (selectedFiles.length > 0) {
+                panel.innerHTML = renderUploadPreviewHTML();
+            } else {
+                renderDetailPanel();
+            }
+
+            const newBody = panel.querySelector('.detail-body');
+            if (newBody) newBody.scrollTop = savedScroll;
+        }
+
+        // --- Upload: per-file XHR with real progress, bounded parallelism ---
+        let isUploading = false;
+        let isPaused = false;
+        const PARALLEL_LIMIT = 3;
+
+        async function upload() {
+            if (isUploading) return;
+            const dataset = document.getElementById('dataset').value.trim();
+            let session = document.getElementById('session').value.trim();
             const metadata = document.getElementById('metadata').value.trim();
 
-            const formData = new FormData();
-            if (session) formData.append('session', session);
-            if (metadata) formData.append('metadata', metadata);
-            for (const f of selectedFiles) {
-                formData.append('files', f);
+            const queue = selectedFiles.filter(f => !f.status || f.status === 'error');
+            if (queue.length === 0) return;
+
+            // If the user didn't specify a session, generate ONE timestamp here and share
+            // it across every file so the whole batch lands in a single session folder.
+            // (Without this, the server would generate a new timestamp per request → N folders.)
+            if (!session) {
+                const d = new Date();
+                const pad = (n) => String(n).padStart(2, '0');
+                session = `${d.getUTCFullYear()}${pad(d.getUTCMonth()+1)}${pad(d.getUTCDate())}_${pad(d.getUTCHours())}${pad(d.getUTCMinutes())}${pad(d.getUTCSeconds())}`;
             }
 
-            const btn = document.getElementById('uploadBtn');
-            const progress = document.getElementById('progress');
-            const progressBar = document.getElementById('progressBar');
-            const progressText = document.getElementById('progressText');
-            const result = document.getElementById('result');
-            const msg = document.getElementById('resultMessage');
-            const detail = document.getElementById('resultDetail');
+            const uploadUrl = dataset
+                ? `/upload/${encodeURIComponent(dataset)}`
+                : `/upload`;
 
-            btn.disabled = true;
-            progress.classList.add('active');
-            result.className = 'result';
-            progressBar.style.width = '50%';
-            progressText.textContent = 'Uploading...';
+            isUploading = true;
+            isPaused = false;
+            syncLeftClose();
+            renderFiles();
 
-            try {
-                const resp = await fetch(`/upload/${encodeURIComponent(dataset)}`, {
-                    method: 'POST',
-                    body: formData,
+            // Concurrency pool — each worker awaits pause before picking up the next file
+            let idx = 0;
+            const worker = async () => {
+                while (idx < queue.length) {
+                    // Block here while paused (re-check every 150ms)
+                    while (isPaused) {
+                        await new Promise(r => setTimeout(r, 150));
+                        // If user cancelled entirely, bail
+                        if (!isUploading) return;
+                    }
+                    if (!isUploading) return;
+                    const item = queue[idx++];
+                    await uploadOne(item, uploadUrl, session, metadata, dataset);
+                }
+            };
+            await Promise.all(
+                Array.from({ length: Math.min(PARALLEL_LIMIT, queue.length) }, worker)
+            );
+
+            isUploading = false;
+            isPaused = false;
+            syncLeftClose();
+            renderFiles();
+            loadDatasets();
+        }
+
+        function togglePause() {
+            if (!isUploading) return;
+            isPaused = !isPaused;
+            renderFilesImmediate();
+        }
+
+        function uploadOne(item, uploadUrl, session, metadata, dataset) {
+            return new Promise((resolve) => {
+                // If the dataset name matches the top-level folder in the path, strip
+                // that folder so files don't end up in <dataset>/<session>/<dataset>/...
+                let savePath = item.path;
+                if (dataset && savePath.startsWith(dataset + '/')) {
+                    savePath = savePath.slice(dataset.length + 1);
+                }
+
+                const fd = new FormData();
+                if (session) fd.append('session', session);
+                if (metadata) fd.append('metadata', metadata);
+                fd.append('files', item.file, item.file.name);
+                fd.append('paths', savePath);
+
+                const xhr = new XMLHttpRequest();
+                xhr.open('POST', uploadUrl);
+                activeUploadXHRs.add(xhr);
+
+                const finish = () => {
+                    activeUploadXHRs.delete(xhr);
+                    resolve();
+                };
+
+                item.status = 'uploading';
+                item.progress = 0;
+                renderFiles();
+
+                xhr.upload.addEventListener('progress', (e) => {
+                    if (e.lengthComputable) {
+                        item.progress = Math.round((e.loaded / e.total) * 100);
+                        renderFiles();
+                    }
                 });
 
-                progressBar.style.width = '100%';
-                progress.classList.remove('active');
+                xhr.onload = () => {
+                    if (xhr.status >= 200 && xhr.status < 300) {
+                        item.status = 'done';
+                        item.progress = 100;
+                    } else {
+                        item.status = 'error';
+                        item.error = `HTTP ${xhr.status}`;
+                    }
+                    renderFiles();
+                    finish();
+                };
 
-                if (resp.ok) {
-                    const data = await resp.json();
-                    result.className = 'result success';
-                    msg.textContent = `Uploaded ${data.uploaded.length} file(s) to ${data.path}`;
-                    detail.textContent = JSON.stringify(data, null, 2);
-                    clearFiles();
-                    loadDatasets();
-                } else {
-                    result.className = 'result error';
-                    msg.textContent = `Upload failed (HTTP ${resp.status})`;
-                    detail.textContent = await resp.text();
+                xhr.onerror = () => {
+                    item.status = 'error';
+                    item.error = 'Network error';
+                    renderFiles();
+                    finish();
+                };
+
+                xhr.onabort = () => {
+                    // User cancelled — just resolve silently
+                    finish();
+                };
+
+                try {
+                    xhr.send(fd);
+                } catch (e) {
+                    item.status = 'error';
+                    item.error = e.message;
+                    renderFiles();
+                    finish();
                 }
-            } catch (e) {
-                progress.classList.remove('active');
-                result.className = 'result error';
-                msg.textContent = 'Upload failed: ' + e.message;
-                detail.textContent =
-                    `Page URL: ${window.location.href}\n` +
-                    `Target: /upload/${dataset}\n` +
-                    `Error: ${e.name} — ${e.message}`;
-            }
-            btn.disabled = selectedFiles.length === 0;
+            });
         }
 
         // --- Browse datasets ---
+        let datasetsCache = [];              // last list from the server
+        let selectedDataset = null;          // currently selected dataset name (shown in detail panel)
+        let datasetDetails = new Map();      // name → { sessions: [...] } cache
+        let datasetSearch = '';              // current search query
+        let datasetSort = 'modified_desc';   // current sort key
+
+        // Format a unix-epoch seconds timestamp as "N minutes/hours/days ago"
+        function relativeTime(ts) {
+            if (!ts) return '';
+            const secs = Math.floor(Date.now() / 1000 - ts);
+            if (secs < 45) return 'just now';
+            if (secs < 90) return '1 minute ago';
+            const mins = Math.round(secs / 60);
+            if (mins < 45) return `${mins} minutes ago`;
+            if (mins < 90) return '1 hour ago';
+            const hrs = Math.round(mins / 60);
+            if (hrs < 24) return `${hrs} hours ago`;
+            if (hrs < 48) return 'yesterday';
+            const days = Math.round(hrs / 24);
+            if (days < 30) return `${days} days ago`;
+            const months = Math.round(days / 30);
+            if (months < 12) return `${months} months ago`;
+            return `${Math.round(months / 12)} years ago`;
+        }
+
+        function sortedFilteredDatasets() {
+            const q = datasetSearch.trim().toLowerCase();
+            let list = datasetsCache.filter(d =>
+                !q || d.name.toLowerCase().includes(q) ||
+                (d.sessions || []).some(s => s.toLowerCase().includes(q))
+            );
+            const cmp = {
+                modified_desc: (a, b) => (b.modified_at || 0) - (a.modified_at || 0),
+                modified_asc:  (a, b) => (a.modified_at || 0) - (b.modified_at || 0),
+                name_asc:      (a, b) => a.name.localeCompare(b.name),
+                name_desc:     (a, b) => b.name.localeCompare(a.name),
+                size_desc:     (a, b) => b.total_size_bytes - a.total_size_bytes,
+                size_asc:      (a, b) => a.total_size_bytes - b.total_size_bytes,
+            }[datasetSort];
+            return cmp ? [...list].sort(cmp) : list;
+        }
+
         async function loadDatasets() {
             const container = document.getElementById('datasetsList');
             try {
                 const resp = await fetch('/datasets');
                 const data = await resp.json();
+                datasetsCache = data.datasets;
 
-                if (data.datasets.length === 0) {
-                    container.innerHTML = '<div class="empty-state">No datasets yet. Upload some files to get started.</div>';
-                    return;
+                // Drop cached details for datasets that no longer exist
+                const names = new Set(datasetsCache.map(d => d.name));
+                for (const k of [...datasetDetails.keys()]) {
+                    if (!names.has(k)) datasetDetails.delete(k);
                 }
+                // Deselect if selected dataset was deleted
+                if (selectedDataset && !names.has(selectedDataset)) selectedDataset = null;
 
-                container.innerHTML = data.datasets.map(ds => `
-                    <div class="dataset-card">
-                        <div class="dataset-card-header">
-                            <span class="dataset-card-name">${ds.name}</span>
-                            <span class="dataset-card-stats">
-                                ${ds.file_count} files &middot; ${formatSize(ds.total_size_bytes)}
-                            </span>
-                        </div>
-                        <div>
-                            ${ds.sessions.map(s => `<span class="session-tag">${s}</span>`).join('')}
-                        </div>
-                    </div>
-                `).join('');
+                renderDatasets();
+                renderDetailPanel();
+
+                // Refresh detail for currently selected dataset
+                if (selectedDataset) fetchDatasetDetail(selectedDataset);
             } catch (e) {
                 container.innerHTML = '<div class="empty-state">Failed to load datasets.</div>';
             }
         }
 
+        function renderDatasets() {
+            const container = document.getElementById('datasetsList');
+            if (datasetsCache.length === 0) {
+                container.innerHTML = '<div class="empty-state">No datasets yet. Upload some files to get started.</div>';
+                return;
+            }
+
+            const visible = sortedFilteredDatasets();
+            if (visible.length === 0) {
+                container.innerHTML = `<div class="empty-state">No datasets match "${datasetSearch}"</div>`;
+                return;
+            }
+
+            container.innerHTML = visible.map(ds => {
+                const safe = ds.name.replace(/'/g, "\\'");
+                const isSelected = selectedDataset === ds.name;
+                const isEmpty = ds.file_count === 0;
+                const maxTags = 3;
+                const shownTags = ds.sessions.slice(0, maxTags);
+                const extra = ds.sessions.length - shownTags.length;
+                const when = relativeTime(ds.modified_at);
+
+                return `
+                <div class="dataset-card ${isSelected ? 'selected' : ''} ${isEmpty ? 'empty' : ''}" onclick="selectDataset('${safe}')">
+                    <div class="dataset-card-header" style="margin-bottom:0.35rem;">
+                        <span class="dataset-card-name">${ds.name}</span>
+                        <span class="dataset-card-stats">
+                            ${ds.file_count} files &middot; ${formatSize(ds.total_size_bytes)}
+                        </span>
+                        <button class="dataset-delete-btn" onclick="event.stopPropagation(); deleteDataset('${safe}', ${ds.file_count})" title="Delete dataset">${ICON_TRASH}</button>
+                    </div>
+                    <div>
+                        ${shownTags.map(s => `<span class="session-tag">${s}</span>`).join('')}
+                        ${extra > 0 ? `<span class="session-tag" style="font-weight:600;">+${extra} more</span>` : ''}
+                    </div>
+                    ${when ? `
+                    <div class="dataset-card-meta">
+                        <span>${when}</span>
+                        ${ds.session_count ? `<span class="dot">·</span><span>${ds.session_count} session${ds.session_count === 1 ? '' : 's'}</span>` : ''}
+                    </div>` : ''}
+                </div>`;
+            }).join('');
+        }
+
+        // Wire up search + custom sort dropdown (once)
+        const SORT_LABELS = {
+            modified_desc: 'Newest first',
+            modified_asc: 'Oldest first',
+            name_asc: 'Name A–Z',
+            name_desc: 'Name Z–A',
+            size_desc: 'Largest first',
+            size_asc: 'Smallest first',
+        };
+
+        function setupDatasetControls() {
+            const search = document.getElementById('datasetSearch');
+            if (search) {
+                search.addEventListener('input', (e) => {
+                    datasetSearch = e.target.value;
+                    renderDatasets();
+                });
+            }
+
+            const wrap = document.getElementById('sortWrap');
+            const button = document.getElementById('sortButton');
+            const label = document.getElementById('sortLabel');
+            const menu = document.getElementById('sortMenu');
+            if (!wrap) return;
+
+            function refreshSortUI() {
+                menu.querySelectorAll('.sort-option').forEach((o) => {
+                    o.classList.toggle('selected', o.dataset.sort === datasetSort);
+                });
+                if (label) label.textContent = SORT_LABELS[datasetSort] || 'Sort by';
+            }
+
+            button.addEventListener('click', (e) => {
+                e.stopPropagation();
+                wrap.classList.toggle('open');
+            });
+
+            menu.addEventListener('click', (e) => {
+                const opt = e.target.closest('.sort-option');
+                if (!opt) return;
+                datasetSort = opt.dataset.sort;
+                wrap.classList.remove('open');
+                refreshSortUI();
+                renderDatasets();
+            });
+
+            document.addEventListener('click', (e) => {
+                if (!wrap.contains(e.target)) wrap.classList.remove('open');
+            });
+
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') wrap.classList.remove('open');
+            });
+
+            refreshSortUI();
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', setupDatasetControls);
+        } else {
+            setupDatasetControls();
+        }
+
+        function renderDetailPanel() {
+            // If files are queued, the upload preview owns the right panel.
+            if (selectedFiles.length > 0) {
+                renderRightPanel();
+                return;
+            }
+            const panel = document.getElementById('detailPanel');
+
+            // Empty state: no dataset selected, no files
+            if (!selectedDataset) {
+                const emptyIcon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M10 4H2v16h20V6H12l-2-2z"/>
+                </svg>`;
+                panel.innerHTML = renderPanelHeader({
+                    iconSvg: emptyIcon,
+                    title: 'Preview',
+                    subtitle: 'Upload files or select a dataset',
+                }) + `
+                    <div class="detail-empty">
+                        ${ICON_FOLDER}
+                        <div>Drop files on the left<br>or select a dataset below</div>
+                    </div>`;
+                return;
+            }
+
+            const ds = datasetsCache.find(d => d.name === selectedDataset);
+            const detail = datasetDetails.get(selectedDataset);
+            const safe = selectedDataset.replace(/'/g, "\\'");
+            const totalFiles = ds ? ds.file_count : 0;
+            const totalSize = ds ? formatSize(ds.total_size_bytes) : '';
+            const sessionCount = ds ? ds.sessions.length : 0;
+
+            const dsIcon = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 4H2v16h20V6H12l-2-2z"/></svg>`;
+            const dsActions = `
+                <button class="panel-header-close" onclick="deleteDataset('${safe}', ${totalFiles})" title="Delete dataset" style="margin-right:0.25rem;">
+                    ${ICON_TRASH}
+                </button>
+                <button class="panel-header-close" onclick="selectDataset(null)" title="Close">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"/>
+                        <line x1="15" y1="9" x2="9" y2="15"/>
+                        <line x1="9" y1="9" x2="15" y2="15"/>
+                    </svg>
+                </button>`;
+
+            const headerHtml = renderPanelHeader({
+                iconSvg: dsIcon,
+                title: selectedDataset,
+                subtitle: `${totalFiles} file${totalFiles === 1 ? '' : 's'} · ${totalSize} · ${sessionCount} session${sessionCount === 1 ? '' : 's'}`,
+                actionsHtml: dsActions,
+            });
+
+            let bodyHtml;
+            if (!detail) {
+                bodyHtml = `<div class="detail-body"><div class="empty-state">Loading...</div></div>`;
+            } else if (detail.sessions.length === 0) {
+                bodyHtml = `<div class="detail-body"><div class="empty-state">This dataset has no sessions.</div></div>`;
+            } else {
+                bodyHtml = `<div class="detail-body">${detail.sessions.map(s => {
+                    const safeS = s.name.replace(/'/g, "\\'");
+                    const shown = s.files.slice(0, 100);
+                    return `
+                    <div class="session-group">
+                        <div class="session-group-header">
+                            <div class="session-group-folder">${ICON_FOLDER}</div>
+                            <span class="session-group-name">${s.name}</span>
+                            <span class="session-group-stats">${s.file_count} files · ${formatSize(s.total_size_bytes)}</span>
+                            <button class="session-delete-btn" style="opacity:1;" onclick="deleteSession('${safe}', '${safeS}', ${s.file_count})" title="Delete session">${ICON_TRASH}</button>
+                        </div>
+                        <div class="session-files">
+                            ${shown.map(f => `
+                                <a href="/datasets/${encodeURIComponent(selectedDataset)}/${encodeURIComponent(s.name)}/${f.split('/').map(encodeURIComponent).join('/')}"
+                                   class="file-link" target="_blank" title="Download ${f}">
+                                    <span class="file-link-name">${f}</span>
+                                </a>`).join('')}
+                            ${s.files.length > shown.length ? `<div class="file-link" style="color:#A9ACB4;">… and ${s.files.length - shown.length} more files</div>` : ''}
+                        </div>
+                    </div>`;
+                }).join('')}</div>`;
+            }
+
+            panel.innerHTML = headerHtml + bodyHtml;
+        }
+
+        async function fetchDatasetDetail(name) {
+            try {
+                const resp = await fetch(`/datasets/${encodeURIComponent(name)}`);
+                if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+                const data = await resp.json();
+                datasetDetails.set(name, data);
+                if (selectedDataset === name) renderDetailPanel();
+            } catch (e) {
+                datasetDetails.set(name, { sessions: [], error: e.message });
+                if (selectedDataset === name) renderDetailPanel();
+            }
+        }
+
+        function selectDataset(name) {
+            selectedDataset = name;
+            renderDatasets();
+            renderDetailPanel();
+            if (name && !datasetDetails.has(name)) fetchDatasetDetail(name);
+        }
+
+        async function deleteDataset(name, fileCount) {
+            if (!confirm(`Delete dataset "${name}"?\n\nThis will permanently remove ${fileCount} file${fileCount === 1 ? '' : 's'}.`)) return;
+            try {
+                const resp = await fetch(`/datasets/${encodeURIComponent(name)}?confirm=true`, { method: 'DELETE' });
+                if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+                datasetDetails.delete(name);
+                if (selectedDataset === name) selectedDataset = null;
+                loadDatasets();
+            } catch (e) {
+                alert(`Failed to delete: ${e.message}`);
+            }
+        }
+
+        async function deleteSession(dataset, session, fileCount) {
+            if (!confirm(`Delete session "${session}" from "${dataset}"?\n\nThis will permanently remove ${fileCount} file${fileCount === 1 ? '' : 's'}.`)) return;
+            try {
+                const resp = await fetch(`/datasets/${encodeURIComponent(dataset)}/${encodeURIComponent(session)}?confirm=true`, { method: 'DELETE' });
+                if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+                datasetDetails.delete(dataset);
+                loadDatasets();
+            } catch (e) {
+                alert(`Failed to delete: ${e.message}`);
+            }
+        }
+
+        // Keep the right panel height in sync with the left panel
+        function syncPanelHeights() {
+            const left = document.querySelector('.container');
+            const right = document.getElementById('detailPanel');
+            if (!left || !right) return;
+            right.style.height = left.offsetHeight + 'px';
+        }
+
+        // Re-sync on initial load, resize, and any time the left panel might resize
+        window.addEventListener('load', syncPanelHeights);
+        window.addEventListener('resize', syncPanelHeights);
+        // Observe left panel size changes (e.g. metadata textarea resize)
+        const leftPanel = document.querySelector('.container');
+        if (leftPanel && 'ResizeObserver' in window) {
+            new ResizeObserver(() => syncPanelHeights()).observe(leftPanel);
+        }
+
         // Load on start
+        renderRightPanel();   // paint the empty state immediately
+        syncPanelHeights();
         loadDatasets();
     </script>
 </body>

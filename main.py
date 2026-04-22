@@ -44,7 +44,22 @@ app = FastAPI(
 @app.get("/", response_class=HTMLResponse)
 async def web_ui():
     """Serve the drag-and-drop upload page."""
-    return (TEMPLATES_DIR / "index.html").read_text()
+    html = (TEMPLATES_DIR / "index.html").read_text()
+    return HTMLResponse(
+        content=html,
+        headers={
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            "Pragma": "no-cache",
+            "Expires": "0",
+        },
+    )
+
+
+@app.get("/icon-preview", response_class=HTMLResponse)
+async def icon_preview():
+    """Temporary page for previewing candidate folder/file icons."""
+    html = (TEMPLATES_DIR / "icon_preview.html").read_text()
+    return HTMLResponse(content=html, headers={"Cache-Control": "no-cache"})
 
 
 # ---------------------------------------------------------------------------
@@ -86,33 +101,42 @@ def _dir_summary(d: Path) -> dict:
 # ---------------------------------------------------------------------------
 # Upload
 # ---------------------------------------------------------------------------
-@app.post("/upload/{dataset}")
-async def upload_files(
-    dataset: str,
-    files: list[UploadFile] = File(..., description="One or more files to upload"),
-    session: Optional[str] = Form(None, description="Session name (auto-generated if omitted)"),
-    metadata: Optional[str] = Form(None, description="Optional JSON metadata string"),
-):
-    """
-    Upload any number of files to a dataset.
+def _auto_dataset_name() -> str:
+    """Generate a descriptive dataset name when the user doesn't provide one."""
+    ts = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+    return f"capture_{ts}"
 
-    - **dataset**: Name of the dataset (e.g. `bottle_v1`, `l515_captures`)
-    - **session**: Optional session/group name. If omitted, a UTC timestamp is used.
-    - **files**: Any files — images, depth maps, point clouds, configs, etc.
-    - **metadata**: Optional JSON string with extra info (camera params, notes, etc.)
-    """
+
+async def _do_upload(
+    dataset: str,
+    files: list[UploadFile],
+    session: Optional[str],
+    metadata: Optional[str],
+    paths: Optional[list[str]],
+):
+    """Shared upload logic for both /upload and /upload/{dataset}."""
     dest = _session_dir(dataset, session)
     saved = []
 
-    for f in files:
-        file_path = dest / f.filename
+    for idx, f in enumerate(files):
+        # Determine relative path (preserves folder structure if provided)
+        if paths and idx < len(paths) and paths[idx]:
+            rel = paths[idx].replace("\\", "/").lstrip("/")
+            rel_parts = [p for p in rel.split("/") if p and p != ".."]
+            rel_path = Path(*rel_parts) if rel_parts else Path(f.filename)
+        else:
+            rel_path = Path(f.filename)
+
+        file_path = dest / rel_path
+        file_path.parent.mkdir(parents=True, exist_ok=True)
+
         # Avoid overwriting: append counter if file exists
         if file_path.exists():
             stem = file_path.stem
             suffix = file_path.suffix
             counter = 1
             while file_path.exists():
-                file_path = dest / f"{stem}_{counter}{suffix}"
+                file_path = file_path.parent / f"{stem}_{counter}{suffix}"
                 counter += 1
 
         with open(file_path, "wb") as out:
@@ -120,7 +144,7 @@ async def upload_files(
             out.write(content)
 
         saved.append({
-            "filename": file_path.name,
+            "filename": str(file_path.relative_to(dest)),
             "size_bytes": file_path.stat().st_size,
         })
 
@@ -152,6 +176,40 @@ async def upload_files(
     }
 
 
+@app.post("/upload")
+async def upload_without_dataset(
+    files: list[UploadFile] = File(..., description="One or more files to upload"),
+    session: Optional[str] = Form(None, description="Session name (auto-generated if omitted)"),
+    metadata: Optional[str] = Form(None, description="Optional JSON metadata string"),
+    paths: Optional[list[str]] = Form(None, description="Optional relative paths (one per file) to preserve folder structure"),
+):
+    """
+    Upload without specifying a dataset name — the server auto-generates one
+    like `capture_20260422_120000`.
+    """
+    return await _do_upload(_auto_dataset_name(), files, session, metadata, paths)
+
+
+@app.post("/upload/{dataset}")
+async def upload_files(
+    dataset: str,
+    files: list[UploadFile] = File(..., description="One or more files to upload"),
+    session: Optional[str] = Form(None, description="Session name (auto-generated if omitted)"),
+    metadata: Optional[str] = Form(None, description="Optional JSON metadata string"),
+    paths: Optional[list[str]] = Form(None, description="Optional relative paths (one per file) to preserve folder structure"),
+):
+    """
+    Upload any number of files (or whole folders) to a named dataset.
+
+    - **dataset**: Name of the dataset (e.g. `bottle_v1`, `l515_captures`)
+    - **session**: Optional session/group name. If omitted, a UTC timestamp is used.
+    - **files**: Any files — images, depth maps, point clouds, configs, etc.
+    - **paths**: Optional list of relative paths (one per file) to preserve folder hierarchy.
+    - **metadata**: Optional JSON string with extra info (camera params, notes, etc.)
+    """
+    return await _do_upload(dataset, files, session, metadata, paths)
+
+
 # ---------------------------------------------------------------------------
 # Browse
 # ---------------------------------------------------------------------------
@@ -164,10 +222,16 @@ async def list_datasets():
             if d.is_dir():
                 summary = _dir_summary(d)
                 sessions = sorted(s.name for s in d.iterdir() if s.is_dir())
+                # Latest mtime across the tree — approximates "last uploaded"
+                stats = [d.stat()] + [
+                    f.stat() for f in d.rglob("*") if f.is_file()
+                ]
+                latest_mtime = max(s.st_mtime for s in stats) if stats else d.stat().st_mtime
                 datasets.append({
                     "name": d.name,
                     "sessions": sessions,
                     "session_count": len(sessions),
+                    "modified_at": latest_mtime,
                     **summary,
                 })
     return {"datasets": datasets}
