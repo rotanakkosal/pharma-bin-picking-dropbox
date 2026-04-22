@@ -231,10 +231,6 @@
             gap: 0.6rem;
         }
 
-        .dataset-card.selected {
-            background: #fdf2f5;
-            outline: 2px solid #93243f;
-        }
 
         /* ====== Header ====== */
         .panel-header {
@@ -1136,34 +1132,104 @@
         }
 
         .dataset-card {
-            background: #EEF1F7;
-            border: 1px solid transparent;
+            position: relative;
+            background: #ffffff;
+            border: 1px solid #eef0f4;
             border-radius: 12px;
             padding: 0.85rem;
             margin-bottom: 0.6rem;
             transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
             cursor: pointer;
+            overflow: hidden;
         }
 
         .dataset-card:hover {
             transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.06);
-            border-color: #d1d5db;
+            box-shadow: 0 6px 16px rgba(0,0,0,0.06);
+            border-color: #d8dce5;
+        }
+
+        .dataset-card.selected {
+            border-color: #93243f;
+            background: #fdf2f5;
+        }
+
+        .dataset-card.selected::before {
+            content: '';
+            position: absolute;
+            left: 0; top: 0; bottom: 0;
+            width: 3px;
+            background: #93243f;
         }
 
         .dataset-card.empty {
             background: #ffffff;
-            border: 1px dashed #d1d5db;
+            border: 1px dashed #d8dce5;
         }
 
         .dataset-card.empty .dataset-card-name {
             color: #6b7280;
         }
 
+        .dataset-card-row {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+        }
+
+        .dataset-card-icon {
+            width: 36px;
+            height: 36px;
+            flex-shrink: 0;
+            background: linear-gradient(180deg, #b83d5e, #93243f);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #ffffff;
+            box-shadow: 0 2px 4px rgba(147, 36, 63, 0.2), inset 0 1px 0 rgba(255,255,255,0.25);
+        }
+
+        .dataset-card.empty .dataset-card-icon {
+            background: #f3f4f6;
+            color: #A9ACB4;
+            box-shadow: none;
+        }
+
+        .dataset-card-icon svg {
+            width: 20px;
+            height: auto;
+        }
+
+        .dataset-card-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .dataset-card-top {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            gap: 0.5rem;
+        }
+
+        .dataset-card-stats-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            background: #f3f4f6;
+            color: #4b5563;
+            font-size: 0.7rem;
+            font-weight: 500;
+            padding: 0.15rem 0.5rem;
+            border-radius: 999px;
+            flex-shrink: 0;
+        }
+
         .dataset-card-meta {
             font-size: 0.72rem;
             color: #A9ACB4;
-            margin-top: 0.4rem;
+            margin-top: 0.35rem;
             display: flex;
             align-items: center;
             gap: 0.4rem;
@@ -1171,15 +1237,6 @@
 
         .dataset-card-meta .dot {
             color: #d1d5db;
-        }
-
-        .dataset-card-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 0.5rem;
-            cursor: pointer;
-            gap: 0.5rem;
         }
 
         .dataset-caret {
@@ -1207,7 +1264,12 @@
             justify-content: center;
             flex-shrink: 0;
             opacity: 0;
-            transition: opacity 0.15s;
+            transition: opacity 0.15s, background 0.15s, color 0.15s;
+            align-self: flex-start;
+        }
+
+        .dataset-card.selected .dataset-delete-btn {
+            opacity: 0.6;
         }
 
         .dataset-card:hover .dataset-delete-btn {
@@ -2315,29 +2377,27 @@
                 const safe = ds.name.replace(/'/g, "\\'");
                 const isSelected = selectedDataset === ds.name;
                 const isEmpty = ds.file_count === 0;
-                const maxTags = 3;
-                const shownTags = ds.sessions.slice(0, maxTags);
-                const extra = ds.sessions.length - shownTags.length;
                 const when = relativeTime(ds.modified_at);
+                const sessionLabel = ds.session_count === 1 ? '1 session' : `${ds.session_count} sessions`;
 
                 return `
                 <div class="dataset-card ${isSelected ? 'selected' : ''} ${isEmpty ? 'empty' : ''}" onclick="selectDataset('${safe}')">
-                    <div class="dataset-card-header" style="margin-bottom:0.35rem;">
-                        <span class="dataset-card-name">${ds.name}</span>
-                        <span class="dataset-card-stats">
-                            ${ds.file_count} files &middot; ${formatSize(ds.total_size_bytes)}
-                        </span>
+                    <div class="dataset-card-row">
+                        <div class="dataset-card-icon">${ICON_FOLDER}</div>
+                        <div class="dataset-card-info">
+                            <div class="dataset-card-top">
+                                <div class="dataset-card-name" title="${ds.name}">${ds.name}</div>
+                                <span class="dataset-card-stats-pill">${formatSize(ds.total_size_bytes)}</span>
+                            </div>
+                            <div class="dataset-card-meta">
+                                <span>${ds.file_count} file${ds.file_count === 1 ? '' : 's'}</span>
+                                <span class="dot">·</span>
+                                <span>${sessionLabel}</span>
+                                ${when ? `<span class="dot">·</span><span>${when}</span>` : ''}
+                            </div>
+                        </div>
                         <button class="dataset-delete-btn" onclick="event.stopPropagation(); deleteDataset('${safe}', ${ds.file_count})" title="Delete dataset">${ICON_TRASH}</button>
                     </div>
-                    <div>
-                        ${shownTags.map(s => `<span class="session-tag">${s}</span>`).join('')}
-                        ${extra > 0 ? `<span class="session-tag" style="font-weight:600;">+${extra} more</span>` : ''}
-                    </div>
-                    ${when ? `
-                    <div class="dataset-card-meta">
-                        <span>${when}</span>
-                        ${ds.session_count ? `<span class="dot">·</span><span>${ds.session_count} session${ds.session_count === 1 ? '' : 's'}</span>` : ''}
-                    </div>` : ''}
                 </div>`;
             }).join('');
         }
