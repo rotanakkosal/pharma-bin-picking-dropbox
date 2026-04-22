@@ -20,13 +20,17 @@ from typing import Optional
 
 from fastapi import FastAPI, File, Form, Query, UploadFile, HTTPException
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 
 # ---------------------------------------------------------------------------
 # Config
 # ---------------------------------------------------------------------------
-STORAGE_ROOT = Path(__file__).parent / "storage"
+BASE_DIR = Path(__file__).parent
+STORAGE_ROOT = BASE_DIR / "storage"
 STORAGE_ROOT.mkdir(exist_ok=True)
-TEMPLATES_DIR = Path(__file__).parent / "templates"
+WEB_DIR = BASE_DIR / "web"
+TEMPLATES_DIR = WEB_DIR / "templates"
+STATIC_DIR = WEB_DIR / "static"
 
 app = FastAPI(
     title="UOAIS Data Upload API",
@@ -36,6 +40,8 @@ app = FastAPI(
     ),
     version="1.0.0",
 )
+
+app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 
 # ---------------------------------------------------------------------------
@@ -53,13 +59,6 @@ async def web_ui():
             "Expires": "0",
         },
     )
-
-
-@app.get("/icon-preview", response_class=HTMLResponse)
-async def icon_preview():
-    """Temporary page for previewing candidate folder/file icons."""
-    html = (TEMPLATES_DIR / "icon_preview.html").read_text()
-    return HTMLResponse(content=html, headers={"Cache-Control": "no-cache"})
 
 
 # ---------------------------------------------------------------------------
