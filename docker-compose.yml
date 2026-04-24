@@ -1,0 +1,10 @@
+services:
+  dropbox:
+    build: .
+    image: pharma-bin-dropbox:latest
+    container_name: pharma-bin-dropbox
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - ./storage:/app/storage
+    restart: unless-stopped
