@@ -41,7 +41,7 @@ STATIC_DIR = WEB_DIR / "static"
 
 INFERENCE_URL = os.environ.get("INFERENCE_URL", "http://127.0.0.1:8100").rstrip("/")
 INFERENCE_TIMEOUT = float(os.environ.get("INFERENCE_TIMEOUT", "30"))
-IMAGE_EXTS = {".png", ".jpg", ".jpeg"}
+IMAGE_EXTS = {".png", ".jpg", ".jpeg", ".tif", ".tiff"}
 OVERLAY_SUFFIX = "_overlay.png"
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
@@ -97,25 +97,133 @@ def _is_image(path: Path) -> bool:
     return True
 
 
-async def _run_inference(file_path: Path, raw_bytes: bytes) -> Optional[Path]:
-    """POST image to the inference service; save overlay alongside the source.
+def _classify_image(path: Path) -> str:
+    """Classify an uploaded image by reading its bit depth + channel count.
+
+    The whole point: don't trust filenames or folder layouts. A real depth
+    map is 16-bit single-channel; an RGB photo is 8-bit 3-channel. That's
+    what every depth sensor and every UOAIS-related dataset writes, so
+    file content is a more reliable signal than path conventions chosen
+    by whoever uploaded the data.
+
+    Returns:
+        "rgb"   — 8-bit, 3+ channels (color photo)
+        "depth" — 16-bit (uint16) or 32-bit float, single channel
+        "other" — anything ambiguous; not sent to inference as either input
+    """
+    if not _is_image(path):
+        return "other"
+    try:
+        with Image.open(path) as im:
+            mode = im.mode
+    except Exception:
+        return "other"
+    # Color photos
+    if mode in ("RGB", "RGBA", "BGR"):
+        return "rgb"
+    # Native PIL modes for 16-bit ints and 32-bit floats — what depth files use
+    if mode in ("I", "I;16", "I;16B", "I;16L", "I;16N", "F"):
+        return "depth"
+    # 8-bit grayscale ("L") and palette ("P") are too ambiguous to classify.
+    return "other"
+
+
+def _is_depth_for_rgb(rgb_stem: str, depth_stem: str) -> bool:
+    """Return True if ``depth_stem`` looks like the depth sibling of ``rgb_stem``.
+
+    Accepts identical names or stems that share the RGB prefix followed by a
+    separator. Covers the common naming patterns:
+        IMG_001  ↔  IMG_001            (same name, different parent dir)
+        IMG_001  ↔  IMG_001_depth      (suffix with "_")
+        IMG_001  ↔  IMG_001.depth      (suffix with ".")
+        IMG_001  ↔  IMG_001-depth      (suffix with "-")
+    """
+    if rgb_stem == depth_stem:
+        return True
+    if depth_stem.startswith(rgb_stem) and len(depth_stem) > len(rgb_stem):
+        return depth_stem[len(rgb_stem)] in "_.-"
+    return False
+
+
+def _pair_rgb_depth(
+    rgb_paths: list[Path], depth_paths: list[Path]
+) -> list[tuple[Path, Optional[Path]]]:
+    """Pair each RGB with its closest depth file, or None if no match.
+
+    Matching priority — pick the most specific signal first:
+      1. Exact stem match anywhere in the upload (rgb/X.png ↔ depth/X.png)
+      2. Same directory + stem-prefix (X.png ↔ X_depth.png in flat folder)
+      3. Stem-prefix anywhere else
+    Each depth file can only pair with one RGB.
+    """
+    pairs: list[tuple[Path, Optional[Path]]] = []
+    used: set[Path] = set()
+
+    for rgb in rgb_paths:
+        match: Optional[Path] = None
+        # 1. exact stem
+        for d in depth_paths:
+            if d not in used and d.stem == rgb.stem:
+                match = d
+                break
+        # 2. same dir, stem prefix
+        if match is None:
+            for d in depth_paths:
+                if d in used:
+                    continue
+                if d.parent == rgb.parent and _is_depth_for_rgb(rgb.stem, d.stem):
+                    match = d
+                    break
+        # 3. anywhere, stem prefix
+        if match is None:
+            for d in depth_paths:
+                if d in used:
+                    continue
+                if _is_depth_for_rgb(rgb.stem, d.stem):
+                    match = d
+                    break
+        if match is not None:
+            used.add(match)
+        pairs.append((rgb, match))
+    return pairs
+
+
+async def _run_inference(
+    rgb_path: Path, depth_path: Optional[Path] = None
+) -> Optional[Path]:
+    """POST RGB (and optional depth) to the inference service; save overlay.
 
     Returns the absolute overlay path on success, None on any failure.
-    Inference is best-effort — failures must never break an upload.
+    Inference is best-effort — failures must never break an upload. The
+    inference server falls back to a dummy depth plane if depth is missing
+    or undecodable, so we just forward whatever we have.
     """
     if _http_client is None:
         return None
-    overlay_path = file_path.parent / (file_path.stem + OVERLAY_SUFFIX)
-    try:
-        resp = await _http_client.post(
-            f"{INFERENCE_URL}/infer",
-            files={"file": (file_path.name, raw_bytes, "application/octet-stream")},
+    overlay_path = rgb_path.parent / (rgb_path.stem + OVERLAY_SUFFIX)
+    files = {
+        "file": (rgb_path.name, rgb_path.read_bytes(), "application/octet-stream"),
+    }
+    if depth_path is not None:
+        files["depth"] = (
+            depth_path.name, depth_path.read_bytes(), "application/octet-stream",
         )
+    try:
+        resp = await _http_client.post(f"{INFERENCE_URL}/infer", files=files)
         resp.raise_for_status()
     except (httpx.HTTPError, httpx.TimeoutException) as exc:
-        log.warning("inference failed for %s: %s", file_path.name, exc)
+        log.warning(
+            "inference failed for %s (depth=%s): %s",
+            rgb_path.name, depth_path.name if depth_path else None, exc,
+        )
         return None
     overlay_path.write_bytes(resp.content)
+    log.info(
+        "inference ok: %s (depth=%s, source=%s)",
+        rgb_path.name,
+        depth_path.name if depth_path else None,
+        resp.headers.get("X-Depth-Source", "?"),
+    )
     return overlay_path
 
 
@@ -259,16 +367,22 @@ async def _do_upload(
     append: bool = False,
     batch_id: Optional[str] = None,
 ):
-    """Shared upload logic for both /upload and /upload/{dataset}."""
+    """Shared upload logic for both /upload and /upload/{dataset}.
+
+    Three phases: save every file to disk, classify the saved images by
+    bit depth + channels (RGB vs depth), pair each RGB with its closest
+    depth file, then run inference per pair. Save-then-infer keeps pairing
+    correct even if depth and RGB arrive out of order in the multipart batch.
+    """
     dest = await _resolve_session_for_batch(dataset, session, append, batch_id)
     # The dataset/session names actually written may differ from what the
     # caller asked for (we auto-suffix to avoid collisions).
     actual_dataset = dest.parent.name
     actual_session = dest.name
-    saved = []
 
+    # Phase 1: write every uploaded file to disk, preserving folder structure.
+    saved_paths: list[Path] = []
     for idx, f in enumerate(files):
-        # Determine relative path (preserves folder structure if provided)
         if paths and idx < len(paths) and paths[idx]:
             rel = paths[idx].replace("\\", "/").lstrip("/")
             rel_parts = [p for p in rel.split("/") if p and p != ".."]
@@ -291,17 +405,37 @@ async def _do_upload(
         with open(file_path, "wb") as out:
             content = await f.read()
             out.write(content)
+        saved_paths.append(file_path)
 
+    # Phase 2: classify saved images by file content (not by name) and
+    # pair each RGB with its closest depth file. Anything classified
+    # "other" (8-bit grayscale, palette, etc.) is left out of inference.
+    classifications = {p: _classify_image(p) for p in saved_paths}
+    rgb_paths = [p for p, kind in classifications.items() if kind == "rgb"]
+    depth_paths = [p for p, kind in classifications.items() if kind == "depth"]
+    pairs = _pair_rgb_depth(rgb_paths, depth_paths)
+    rgb_to_depth = {rgb: depth for rgb, depth in pairs}
+
+    # Phase 3: run inference per RGB (with depth if matched). Best-effort —
+    # failures don't break the upload.
+    overlays: dict[Path, Path] = {}
+    for rgb, depth in pairs:
+        overlay_path = await _run_inference(rgb, depth)
+        if overlay_path is not None:
+            overlays[rgb] = overlay_path
+
+    # Build the response entries from saved_paths in the original upload order.
+    saved = []
+    for fp in saved_paths:
         entry = {
-            "filename": str(file_path.relative_to(dest)),
-            "size_bytes": file_path.stat().st_size,
+            "filename": str(fp.relative_to(dest)),
+            "size_bytes": fp.stat().st_size,
         }
-
-        if _is_image(file_path):
-            overlay_path = await _run_inference(file_path, content)
-            if overlay_path is not None:
-                entry["overlay"] = str(overlay_path.relative_to(dest))
-
+        if fp in overlays:
+            entry["overlay"] = str(overlays[fp].relative_to(dest))
+        depth_match = rgb_to_depth.get(fp)
+        if depth_match is not None:
+            entry["depth"] = str(depth_match.relative_to(dest))
         saved.append(entry)
 
     # Save metadata if provided
