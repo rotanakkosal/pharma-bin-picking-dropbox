@@ -3,8 +3,11 @@ services:
     build: .
     image: pharma-bin-dropbox:latest
     container_name: pharma-bin-dropbox
+    # Use host UID/GID so the container can write to the bind-mounted ./storage directory.
+    # Note: bash reserves the $UID variable as readonly, so we use HOST_UID/HOST_GID instead.
+    user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
     ports:
-      - "127.0.0.1:8000:8000"
+      - "127.0.0.1:9009:8000"
     volumes:
       - ./storage:/app/storage
     restart: unless-stopped

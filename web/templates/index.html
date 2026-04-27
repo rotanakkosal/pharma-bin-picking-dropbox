@@ -63,8 +63,15 @@
                             <path d="M21.9073 35.0174C21.5431 35.0174 21.179 34.8833 20.8915 34.5958L18.9939 32.6983C18.4381 32.1424 18.4381 31.2224 18.9939 30.6666C19.5498 30.1108 20.4698 30.1108 21.0256 30.6666L21.9457 31.5866L25.0123 28.7499C25.6065 28.2133 26.5073 28.2516 27.044 28.8266C27.5806 29.4016 27.5423 30.3216 26.9673 30.8583L22.8848 34.6341C22.5973 34.8833 22.2523 35.0174 21.9073 35.0174Z" fill="#292D32"/>
                         </svg>
                     </div>
-                    <div class="dropzone-text">Choose a file or drag &amp; drop it here</div>
-                    <div class="dropzone-hint">Any file type or folder, structure preserved on the server</div>
+                    <div class="dropzone-empty">
+                        <div class="dropzone-text">Choose a file or drag &amp; drop it here</div>
+                        <div class="dropzone-hint">Any file type or folder, structure preserved on the server</div>
+                    </div>
+                    <div class="dropzone-summary" id="dropzoneSummary" hidden>
+                        <div class="dropzone-summary-count" id="dropzoneSummaryCount">0 files</div>
+                        <div class="dropzone-summary-meta" id="dropzoneSummaryMeta">0 B selected</div>
+                        <div class="dropzone-summary-hint">Drop more or click to add</div>
+                    </div>
                     <button type="button" class="browse-btn" id="browseBtn">Browse File</button>
                     <input type="file" id="fileInput" multiple>
                     <input type="file" id="folderInput" webkitdirectory directory multiple>
@@ -114,6 +121,15 @@
             </div>
         </section>
     </div><!-- /.page -->
+
+    <div id="lightbox" class="lightbox" hidden>
+        <button class="lightbox-close" onclick="closeLightbox()" aria-label="Close">&times;</button>
+        <button class="lightbox-nav lightbox-nav--prev" onclick="navLightbox(-1, event)" aria-label="Previous">&#x2039;</button>
+        <button class="lightbox-nav lightbox-nav--next" onclick="navLightbox(1, event)" aria-label="Next">&#x203A;</button>
+        <div class="lightbox-caption" id="lightboxCaption"></div>
+        <img class="lightbox-img" id="lightboxImg" alt="" onclick="event.stopPropagation()">
+        <div class="lightbox-counter" id="lightboxCounter"></div>
+    </div>
 
     <script src="/static/js/app.js"></script>
 </body>
