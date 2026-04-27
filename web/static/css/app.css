@@ -1576,6 +1576,186 @@ body {
     appearance: none;
 }
 
+.upload-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 900;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(15, 15, 18, 0.55);
+    backdrop-filter: blur(2px);
+    padding: 1.5rem;
+}
+
+.upload-overlay[hidden] { display: none; }
+
+.upload-overlay-card {
+    width: min(440px, 100%);
+    background: #fff;
+    border-radius: 14px;
+    padding: 1.75rem 1.5rem 1.4rem;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+}
+
+.upload-overlay-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #292D32;
+    text-align: center;
+}
+
+.upload-overlay-target {
+    font-size: 0.78rem;
+    color: #6b7280;
+    text-align: center;
+    margin-top: -0.6rem;
+    word-break: break-all;
+}
+
+.upload-overlay-loader-wrap {
+    display: flex;
+    justify-content: center;
+    /* Contrasting backdrop so the loader's white washer body is visible
+       against the modal card. The .loader::after pseudo-element extends
+       ~64px below the loader box, so reserve room for the falling clothes. */
+    background: linear-gradient(180deg, #eef0f3 0%, #e3e6ea 100%);
+    border-radius: 14px;
+    padding: 1.5rem 0 5rem;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.upload-overlay-substatus {
+    text-align: center;
+    font-size: 0.78rem;
+    color: #6b7280;
+    margin-top: -0.4rem;
+    min-height: 1em;
+}
+
+.upload-overlay-progress-bar {
+    height: 8px;
+    background: #f3f4f6;
+    border-radius: 999px;
+    overflow: hidden;
+}
+
+.upload-overlay-progress-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, #93243f, #c84d75);
+    border-radius: 999px;
+    transition: width 200ms ease;
+}
+
+.upload-overlay-stats {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.85rem;
+    color: #292D32;
+    font-weight: 500;
+}
+
+.upload-overlay-meta {
+    text-align: center;
+    font-size: 0.78rem;
+    color: #6b7280;
+}
+
+.upload-overlay-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.4rem;
+}
+
+.upload-overlay-btn {
+    flex: 1;
+    padding: 0.55rem 1rem;
+    font-family: inherit;
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+    border: 1px solid transparent;
+}
+
+.upload-overlay-btn--secondary {
+    background: #fff;
+    color: #93243f;
+    border-color: rgba(147, 36, 63, 0.4);
+}
+
+.upload-overlay-btn--secondary:hover {
+    background: #fdf2f5;
+    border-color: #93243f;
+}
+
+.upload-overlay-btn--danger {
+    background: #fff;
+    color: #6b7280;
+    border-color: #e5e7eb;
+}
+
+.upload-overlay-btn--danger:hover {
+    background: #fef2f2;
+    color: #b91c1c;
+    border-color: #fecaca;
+}
+
+/* Washing-machine loader (user-supplied) */
+.loader {
+    width: 175px;
+    height: 80px;
+    display: block;
+    margin: auto;
+    background-image:
+        linear-gradient(#263238 50px, transparent 0),
+        radial-gradient(circle 25px at 25px 25px, #FFF 100%, transparent 0),
+        radial-gradient(circle 50px at 50px 50px, #FFF 100%, transparent 0),
+        radial-gradient(circle 25px at 25px 25px, #FFF 100%, transparent 0),
+        linear-gradient(#FFF 50px, transparent 0);
+    background-size: 64px 6px, 50px 50px, 100px 76px, 50px 50px, 120px 40px;
+    background-position: 55px 60px, 0px 30px, 37px 0px, 122px 30px, 25px 40px;
+    background-repeat: no-repeat;
+    position: relative;
+    box-sizing: border-box;
+}
+
+.loader::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%) rotate(-180deg);
+    top: 62px;
+    height: 64px;
+    width: 60px;
+    background-color: #FFF;
+    background-image:
+        linear-gradient(#DDD 20px, transparent 0),
+        linear-gradient(#DDD 5px, transparent 0),
+        linear-gradient(#DDD 10px, transparent 0),
+        linear-gradient(#DDD 10px, transparent 0);
+    background-size: 50px 20px;
+    background-position: 5px 36px, 5px 25px, 5px 10px;
+    background-repeat: no-repeat;
+    border-radius: 2px 2px 4px 4px;
+    z-index: 10;
+    box-shadow: 0px -4px 7px rgba(0, 0, 0, 0.5);
+    box-sizing: border-box;
+    animation: animloader 4s linear infinite;
+}
+
+@keyframes animloader {
+    0%   { height: 64px; }
+    90%, 100% { height: 0px; }
+}
+
 .lightbox {
     position: fixed;
     inset: 0;
@@ -1593,6 +1773,14 @@ body {
     display: none;
 }
 
+.lightbox-stage {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: default;
+}
+
 .lightbox-img {
     max-width: 95vw;
     max-height: 85vh;
@@ -1601,6 +1789,83 @@ body {
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
     cursor: default;
     background: #1a1a1a;
+    transition: filter 180ms ease;
+}
+
+/* While the full-res image is still downloading we show the small cached
+   thumbnail. Slight blur masks the resolution gap and signals "loading". */
+.lightbox-img.is-thumb {
+    filter: blur(4px);
+}
+
+/* Two-ball orbit loader for the lightbox preview (scoped name to avoid
+   colliding with the upload-modal .loader washer). */
+.lightbox-loader {
+    position: absolute;
+    animation: lb-rotate 1s infinite;
+    height: 50px;
+    width: 50px;
+    pointer-events: none;
+}
+
+.lightbox-loader::before,
+.lightbox-loader::after {
+    border-radius: 50%;
+    content: "";
+    display: block;
+    height: 20px;
+    width: 20px;
+}
+
+.lightbox-loader::before {
+    animation: lb-ball1 1s infinite;
+    background-color: #fff;
+    box-shadow: 30px 0 0 #ff3d00;
+    margin-bottom: 10px;
+}
+
+.lightbox-loader::after {
+    animation: lb-ball2 1s infinite;
+    background-color: #ff3d00;
+    box-shadow: 30px 0 0 #fff;
+}
+
+.lightbox-loader[hidden] { display: none; }
+
+@keyframes lb-rotate {
+    0%   { transform: rotate(0deg) scale(0.8); }
+    50%  { transform: rotate(360deg) scale(1.2); }
+    100% { transform: rotate(720deg) scale(0.8); }
+}
+
+@keyframes lb-ball1 {
+    0% {
+        box-shadow: 30px 0 0 #ff3d00;
+    }
+    50% {
+        box-shadow: 0 0 0 #ff3d00;
+        margin-bottom: 0;
+        transform: translate(15px, 15px);
+    }
+    100% {
+        box-shadow: 30px 0 0 #ff3d00;
+        margin-bottom: 10px;
+    }
+}
+
+@keyframes lb-ball2 {
+    0% {
+        box-shadow: 30px 0 0 #fff;
+    }
+    50% {
+        box-shadow: 0 0 0 #fff;
+        margin-top: -20px;
+        transform: translate(15px, 15px);
+    }
+    100% {
+        box-shadow: 30px 0 0 #fff;
+        margin-top: 0;
+    }
 }
 
 .lightbox-caption {
@@ -1786,7 +2051,54 @@ body {
     animation: spin-once 0.6s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* Continuous spin while datasetsLoading is true (auto-refresh after upload). */
+.refresh-btn.loading svg {
+    animation: spin-loop 0.9s linear infinite;
+}
+
 @keyframes spin-once {
     from { transform: rotate(0deg); }
     to { transform: rotate(360deg); }
+}
+
+@keyframes spin-loop {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* Skeleton cards shown while datasets are loading for the first time. */
+.dataset-card--skeleton {
+    pointer-events: none;
+}
+
+.skeleton-shape {
+    background: linear-gradient(
+        90deg,
+        #eef0f3 0%,
+        #f7f8fa 50%,
+        #eef0f3 100%
+    );
+    background-size: 200% 100%;
+    animation: skeleton-shimmer 1.4s infinite linear;
+    border-radius: 6px;
+}
+
+.skeleton-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    flex-shrink: 0;
+}
+
+.skeleton-line {
+    height: 0.8rem;
+    margin: 0.4rem 0;
+}
+
+.skeleton-line--title { width: 60%; }
+.skeleton-line--meta  { width: 80%; height: 0.65rem; }
+
+@keyframes skeleton-shimmer {
+    0%   { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
 }

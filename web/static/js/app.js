@@ -248,17 +248,30 @@ function renderEntry(entry, fileUrl, sessionName) {
             </a>`;
     }
 
-    const sourceUrl = fileUrl(entry.path);
-    const overlayUrl = entry.overlay ? fileUrl(entry.overlay) : null;
+    // Tiny cached JPEG for the card thumbnail (~20KB) and a larger preview
+    // for the lightbox (~400KB) — original PNG stays accessible via fileUrl
+    // for downloads but never blocks the UI.
+    const sourceThumb = thumbUrl(selectedDataset, sessionName, entry.path);
+    const overlayThumb = entry.overlay ? thumbUrl(selectedDataset, sessionName, entry.overlay) : null;
+    const sourcePreview = thumbUrl(selectedDataset, sessionName, entry.path, LIGHTBOX_MAX_EDGE);
+    const overlayPreview = entry.overlay ? thumbUrl(selectedDataset, sessionName, entry.overlay, LIGHTBOX_MAX_EDGE) : null;
     const baseCaption = `${sessionName} / ${entry.path}`;
 
     const sourceIdx = lightboxItems.length;
-    lightboxItems.push({ url: sourceUrl, caption: `${baseCaption} — original` });
+    lightboxItems.push({
+        url: sourcePreview,
+        thumbUrl: sourceThumb,
+        caption: `${baseCaption} — original`,
+    });
 
     let overlayIdx = -1;
-    if (overlayUrl) {
+    if (overlayPreview) {
         overlayIdx = lightboxItems.length;
-        lightboxItems.push({ url: overlayUrl, caption: `${baseCaption} — masks` });
+        lightboxItems.push({
+            url: overlayPreview,
+            thumbUrl: overlayThumb,
+            caption: `${baseCaption} — masks`,
+        });
     }
 
     return `
@@ -267,14 +280,14 @@ function renderEntry(entry, fileUrl, sessionName) {
                 <button type="button" class="image-card-thumb"
                         onclick="openLightbox(${sourceIdx})"
                         title="Original — click to enlarge">
-                    <img src="${sourceUrl}" alt="${escName}" loading="lazy">
+                    <img src="${sourceThumb}" alt="${escName}" loading="lazy">
                     <span class="image-card-label">original</span>
                 </button>
-                ${overlayUrl ? `
+                ${overlayThumb ? `
                     <button type="button" class="image-card-thumb image-card-thumb--mask"
                             onclick="openLightbox(${overlayIdx})"
                             title="Mask overlay — click to enlarge">
-                        <img src="${overlayUrl}" alt="${escName} overlay" loading="lazy">
+                        <img src="${overlayThumb}" alt="${escName} overlay" loading="lazy">
                         <span class="image-card-label image-card-label--mask">masks</span>
                     </button>` : `
                     <div class="image-card-thumb image-card-thumb--empty" title="No mask available">
@@ -284,6 +297,19 @@ function renderEntry(entry, fileUrl, sessionName) {
             <div class="image-card-name" title="${escName}">${entry.path}</div>
         </div>`;
 }
+
+function thumbUrl(dataset, session, rel, maxEdge) {
+    const base = `/thumb/${encodeURIComponent(dataset)}/${encodeURIComponent(session)}/${rel.split('/').map(encodeURIComponent).join('/')}`;
+    return maxEdge ? `${base}?max=${maxEdge}` : base;
+}
+
+// Bigger size for lightbox previews — small enough to load fast (~400 KB
+// JPEG vs. 25 MB PNG original) and still sharp on a typical monitor.
+const LIGHTBOX_MAX_EDGE = 1920;
+
+// Token incremented on every nav so a slow full-res download from a previous
+// frame can't clobber the currently-displayed image.
+let _lightboxToken = 0;
 
 function openLightbox(index) {
     if (typeof index !== 'number' || !lightboxItems[index]) return;
@@ -297,18 +323,70 @@ function openLightbox(index) {
 function showLightboxFrame() {
     const item = lightboxItems[lightboxIndex];
     const img = document.getElementById('lightboxImg');
+    const spin = document.getElementById('lightboxSpinner');
     const cap = document.getElementById('lightboxCaption');
     const ctr = document.getElementById('lightboxCounter');
     const prev = document.querySelector('.lightbox-nav--prev');
     const next = document.querySelector('.lightbox-nav--next');
     if (!item || !img) return;
-    img.src = item.url;
+
+    const token = ++_lightboxToken;
     img.alt = item.caption || '';
+
     if (cap) cap.textContent = item.caption || '';
     if (ctr) ctr.textContent = `${lightboxIndex + 1} / ${lightboxItems.length}`;
     const multi = lightboxItems.length > 1;
     if (prev) prev.style.visibility = multi ? 'visible' : 'hidden';
     if (next) next.style.visibility = multi ? 'visible' : 'hidden';
+
+    // 1. Fast path — image already fully decoded in memory cache.
+    const full = new Image();
+    full.src = item.url;
+    if (full.complete && full.naturalWidth > 0) {
+        img.src = item.url;
+        img.classList.remove('is-thumb');
+        if (spin) spin.hidden = true;
+        preloadNeighbors();
+        return;
+    }
+
+    // 2. Slow path — show the (cached) thumb instantly so the user never sees
+    //    a stale frame, but DELAY the spinner so quickly-arriving images
+    //    (HTTP cache hits, fast network) don't flash a loader at all.
+    img.classList.add('is-thumb');
+    img.src = item.thumbUrl || item.url;
+    if (spin) spin.hidden = true;
+    const spinTimer = setTimeout(() => {
+        if (token === _lightboxToken && spin) spin.hidden = false;
+    }, 200);
+
+    full.onload = () => {
+        if (token !== _lightboxToken) return;
+        clearTimeout(spinTimer);
+        img.src = full.src;
+        img.classList.remove('is-thumb');
+        if (spin) spin.hidden = true;
+        preloadNeighbors();
+    };
+    full.onerror = () => {
+        if (token !== _lightboxToken) return;
+        clearTimeout(spinTimer);
+        if (spin) spin.hidden = true;
+    };
+}
+
+// Warm the browser cache for the images on either side of the current frame
+// so prev/next navigation hits the fast path instead of re-downloading.
+function preloadNeighbors() {
+    const n = lightboxItems.length;
+    if (n <= 1) return;
+    for (const offset of [1, -1, 2, -2]) {
+        const idx = ((lightboxIndex + offset) % n + n) % n;
+        const target = lightboxItems[idx];
+        if (!target || !target.url) continue;
+        const pre = new Image();
+        pre.src = target.url;
+    }
 }
 
 function navLightbox(delta, event) {
@@ -547,14 +625,14 @@ function renderFileRow(node, depth) {
                 <button type="button" class="upload-preview-thumb"
                         onclick="openUploadPreview(${node.index}, 0)"
                         title="Original — click to enlarge">
-                    <img src="${r.sourceUrl}" alt="original" loading="lazy">
+                    <img src="${r.sourceThumb || r.sourceUrl}" alt="original" loading="lazy">
                     <span class="upload-preview-label">original</span>
                 </button>
                 ${r.overlayUrl ? `
                     <button type="button" class="upload-preview-thumb upload-preview-thumb--mask"
                             onclick="openUploadPreview(${node.index}, 1)"
                             title="Mask overlay — click to enlarge">
-                        <img src="${r.overlayUrl}" alt="masks" loading="lazy">
+                        <img src="${r.overlayThumb || r.overlayUrl}" alt="masks" loading="lazy">
                         <span class="upload-preview-label upload-preview-label--mask">masks</span>
                     </button>` : `
                     <div class="upload-preview-thumb upload-preview-thumb--empty" title="No mask available">
@@ -595,9 +673,17 @@ function openUploadPreview(fileIndex, which) {
         if (!f.uploadResult) return;
         const r = f.uploadResult;
         const sourceIdx = items.length;
-        items.push({ url: r.sourceUrl, caption: `${r.label} — original` });
+        items.push({
+            url: r.sourcePreview || r.sourceUrl,
+            thumbUrl: r.sourceThumb,
+            caption: `${r.label} — original`,
+        });
         const overlayIdx = r.overlayUrl ? items.length : -1;
-        if (r.overlayUrl) items.push({ url: r.overlayUrl, caption: `${r.label} — masks` });
+        if (r.overlayUrl) items.push({
+            url: r.overlayPreview || r.overlayUrl,
+            thumbUrl: r.overlayThumb,
+            caption: `${r.label} — masks`,
+        });
         if (i === fileIndex) {
             target = (which === 1 && overlayIdx >= 0) ? overlayIdx : sourceIdx;
         }
@@ -643,6 +729,7 @@ function renderFiles() {
         _renderScheduled = false;
         renderRightPanel();
         syncDropzoneSummary();
+        syncUploadOverlay();
     });
 }
 
@@ -651,6 +738,86 @@ function renderFilesImmediate() {
     _renderScheduled = false;
     renderRightPanel();
     syncDropzoneSummary();
+    syncUploadOverlay();
+}
+
+// Full-screen overlay shown while an upload is in progress. Mirrors the
+// per-file progress already drawn in the right panel, but at center-stage
+// so a multi-thousand-file batch can't be missed or mistaken for hung.
+function syncUploadOverlay() {
+    const ov = document.getElementById('uploadOverlay');
+    if (!ov) return;
+    if (!isUploading) {
+        ov.hidden = true;
+        return;
+    }
+    const n = selectedFiles.length;
+    const doneCount = selectedFiles.filter(f => f.status === 'done').length;
+    const errCount  = selectedFiles.filter(f => f.status === 'error').length;
+    const totalBytes = selectedFiles.reduce((s, f) => s + (f.file.size || 0), 0);
+    // Bytes from fully-completed files only — keeps the meta line honest about
+    // what's persisted on the server. (In-flight files don't count until done.)
+    const uploadedBytes = selectedFiles.reduce(
+        (s, f) => f.status === 'done' ? s + (f.file.size || 0) : s, 0,
+    );
+    // The progress bar tracks file count so it stays in lockstep with the
+    // "X / N files" counter — bytes percentage gets its own line below.
+    const pct = Math.round((doneCount / Math.max(n, 1)) * 100);
+
+    // Distinguish "still pushing bytes" from "waiting on the server's inference
+    // response". `bytesUploaded` flips true via xhr.upload.onloadend the moment
+    // all bytes leave the browser; `status` flips to 'done' only when the
+    // server replies (after running UOAIS + CG-Net). The gap between those two
+    // moments grows with batch size.
+    const stillUploading = selectedFiles.some(
+        f => f.status === 'uploading' && !f.bytesUploaded,
+    );
+    const awaitingInference = selectedFiles.filter(
+        f => f.status === 'uploading' && f.bytesUploaded,
+    ).length;
+
+    const titleEl = document.getElementById('uploadOverlayTitle');
+    if (titleEl) {
+        titleEl.textContent = stillUploading
+            ? 'Uploading & processing files'
+            : awaitingInference > 0
+                ? 'Processing masks…'
+                : 'Finishing up…';
+    }
+    const subEl = document.getElementById('uploadOverlaySubstatus');
+    if (subEl) {
+        if (awaitingInference > 0 && !stillUploading) {
+            subEl.textContent =
+                `Running mask inference on ${awaitingInference} file${awaitingInference === 1 ? '' : 's'}…`;
+        } else if (awaitingInference > 0) {
+            subEl.textContent =
+                `${awaitingInference} file${awaitingInference === 1 ? '' : 's'} waiting for masks`;
+        } else {
+            subEl.textContent = '';
+        }
+    }
+
+    document.getElementById('uploadOverlayCount').textContent =
+        `${doneCount} / ${n} file${n === 1 ? '' : 's'}`;
+    document.getElementById('uploadOverlayPct').textContent = `${pct}%`;
+    document.getElementById('uploadOverlayMeta').textContent =
+        `${formatSize(uploadedBytes)} of ${formatSize(totalBytes)}` +
+        (errCount > 0 ? ` · ${errCount} failed` : '');
+    document.getElementById('uploadOverlayFill').style.width = `${pct}%`;
+
+    const targetEl = document.getElementById('uploadOverlayTarget');
+    const dataset = (document.getElementById('dataset') || {}).value || '';
+    const session = (document.getElementById('session') || {}).value || '';
+    if (targetEl) {
+        targetEl.textContent = dataset
+            ? (session ? `${dataset} / ${session}` : dataset)
+            : 'auto-generated dataset';
+    }
+
+    const pauseBtn = document.getElementById('uploadOverlayPauseBtn');
+    if (pauseBtn) pauseBtn.textContent = isPaused ? 'Resume' : 'Pause';
+
+    ov.hidden = false;
 }
 
 // Show the selection count/size inside the dropzone while files are queued
@@ -935,6 +1102,7 @@ function uploadOne(item, uploadUrl, session, metadata, dataset, batchId) {
 
         item.status = 'uploading';
         item.progress = 0;
+        item.bytesUploaded = false;
         renderFiles();
 
         xhr.upload.addEventListener('progress', (e) => {
@@ -942,6 +1110,15 @@ function uploadOne(item, uploadUrl, session, metadata, dataset, batchId) {
                 item.progress = Math.round((e.loaded / e.total) * 100);
                 renderFiles();
             }
+        });
+
+        // Fires once all request bytes have left the browser. After this point
+        // the file is sitting on the server while it runs inference — the UI
+        // uses this to switch from "uploading" to "processing masks" cleanly.
+        xhr.upload.addEventListener('loadend', () => {
+            item.bytesUploaded = true;
+            item.progress = 100;
+            renderFiles();
         });
 
         xhr.onload = () => {
@@ -959,6 +1136,10 @@ function uploadOne(item, uploadUrl, session, metadata, dataset, batchId) {
                         item.uploadResult = {
                             sourceUrl: buildUrl(u.filename),
                             overlayUrl: u.overlay ? buildUrl(u.overlay) : null,
+                            sourceThumb: thumbUrl(resp.dataset, resp.session, u.filename),
+                            overlayThumb: u.overlay ? thumbUrl(resp.dataset, resp.session, u.overlay) : null,
+                            sourcePreview: thumbUrl(resp.dataset, resp.session, u.filename, LIGHTBOX_MAX_EDGE),
+                            overlayPreview: u.overlay ? thumbUrl(resp.dataset, resp.session, u.overlay, LIGHTBOX_MAX_EDGE) : null,
                             label: u.filename,
                         };
                     }
@@ -1037,33 +1218,73 @@ function sortedFilteredDatasets() {
     return cmp ? [...list].sort(cmp) : list;
 }
 
+let datasetsLoading = false;
+
+// Reflect loading state on the refresh icon so a re-fetch triggered by code
+// (e.g. right after upload) is visible even when nothing else has changed.
+function syncRefreshButton() {
+    const btn = document.querySelector('.datasets-header .refresh-btn');
+    if (!btn) return;
+    btn.classList.toggle('loading', datasetsLoading);
+}
+
 async function loadDatasets() {
     const container = document.getElementById('datasetsList');
+    datasetsLoading = true;
+    renderDatasets();
     try {
         const resp = await fetch('/datasets');
         const data = await resp.json();
         datasetsCache = data.datasets;
 
-        // Drop cached details for datasets that no longer exist
-        const names = new Set(datasetsCache.map(d => d.name));
+        // Drop cached details for datasets that no longer exist OR whose
+        // top-level summary (file count / sessions / mtime) has changed since
+        // we last fetched their detail — keeps the detail panel honest.
+        const byName = new Map(datasetsCache.map(d => [d.name, d]));
         for (const k of [...datasetDetails.keys()]) {
-            if (!names.has(k)) datasetDetails.delete(k);
+            const live = byName.get(k);
+            const cached = datasetDetails.get(k);
+            const stale = !live
+                || live.file_count !== cached.file_count
+                || (live.session_count ?? live.sessions?.length) !== cached.sessions?.length
+                || live.modified_at !== cached._mtime;
+            if (stale) datasetDetails.delete(k);
         }
         // Deselect if selected dataset was deleted
-        if (selectedDataset && !names.has(selectedDataset)) selectedDataset = null;
+        if (selectedDataset && !byName.has(selectedDataset)) selectedDataset = null;
 
+        datasetsLoading = false;
         renderDatasets();
         renderDetailPanel();
 
         // Refresh detail for currently selected dataset
         if (selectedDataset) fetchDatasetDetail(selectedDataset);
     } catch (e) {
+        datasetsLoading = false;
         container.innerHTML = '<div class="empty-state">Failed to load datasets.</div>';
     }
 }
 
 function renderDatasets() {
     const container = document.getElementById('datasetsList');
+    syncRefreshButton();
+
+    // First-load: no cache yet AND a fetch is in flight → skeleton cards.
+    if (datasetsLoading && datasetsCache.length === 0) {
+        const skel = `
+            <div class="dataset-card dataset-card--skeleton">
+                <div class="dataset-card-row">
+                    <div class="skeleton-shape skeleton-icon"></div>
+                    <div class="dataset-card-info">
+                        <div class="skeleton-shape skeleton-line skeleton-line--title"></div>
+                        <div class="skeleton-shape skeleton-line skeleton-line--meta"></div>
+                    </div>
+                </div>
+            </div>`;
+        container.innerHTML = skel.repeat(3);
+        return;
+    }
+
     if (datasetsCache.length === 0) {
         container.innerHTML = '<div class="empty-state">No datasets yet. Upload some files to get started.</div>';
         return;
@@ -1221,10 +1442,25 @@ function renderDetailPanel() {
     });
 
     let bodyHtml;
+    const sessions = detail?.sessions;
+    const cachedSessionCount = Array.isArray(sessions) ? sessions.length : 0;
+    const liveSessionCount = ds?.session_count ?? 0;
+    // List and detail disagree — flag it loudly so we can debug, but DON'T
+    // auto-refetch (that just causes infinite loops if the server is the
+    // one returning empty data).
+    const mismatch = detail && cachedSessionCount === 0 && liveSessionCount > 0;
+    const errMsg = detail?.error;
     if (!detail) {
         bodyHtml = `<div class="detail-body"><div class="empty-state">Loading...</div></div>`;
-    } else if (detail.sessions.length === 0) {
-        bodyHtml = `<div class="detail-body"><div class="empty-state">This dataset has no sessions.</div></div>`;
+    } else if (cachedSessionCount === 0) {
+        const errLine = errMsg ? `<br><br><span style="color:#c52c4a;">Error: ${errMsg}</span>` : '';
+        bodyHtml = mismatch
+            ? `<div class="detail-body"><div class="empty-state">
+                   The dataset list reports ${liveSessionCount} sessions, but the server returned none.${errLine}
+                   <br><br>
+                   <button class="browse-btn" onclick="datasetDetails.delete('${selectedDataset.replace(/'/g, "\\'")}'); fetchDatasetDetail('${selectedDataset.replace(/'/g, "\\'")}')">Try again</button>
+               </div></div>`
+            : `<div class="detail-body"><div class="empty-state">This dataset has no sessions.${errLine}</div></div>`;
     } else {
         // Reset the flat lightbox list before re-rendering — renderEntry()
         // appends to it as it walks each session.
@@ -1257,16 +1493,25 @@ function renderDetailPanel() {
 }
 
 async function fetchDatasetDetail(name) {
+    // Fetch first, then render — keeping render outside the try block so a
+    // render bug never overwrites valid data with the catch-path empty stub.
+    let stored;
     try {
         const resp = await fetch(`/datasets/${encodeURIComponent(name)}`);
         if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
         const data = await resp.json();
-        datasetDetails.set(name, data);
-        if (selectedDataset === name) renderDetailPanel();
+        if (!Array.isArray(data?.sessions)) {
+            throw new Error(`Server response missing 'sessions' array`);
+        }
+        const live = datasetsCache.find(d => d.name === name);
+        if (live) data._mtime = live.modified_at;
+        stored = data;
     } catch (e) {
-        datasetDetails.set(name, { sessions: [], error: e.message });
-        if (selectedDataset === name) renderDetailPanel();
+        console.error('[fetchDatasetDetail] failed', name, e);
+        stored = { sessions: [], error: String(e.message || e) };
     }
+    datasetDetails.set(name, stored);
+    if (selectedDataset === name) renderDetailPanel();
 }
 
 function selectDataset(name) {
@@ -1274,7 +1519,10 @@ function selectDataset(name) {
     rightPanelMode = name ? 'dataset' : 'auto';
     renderDatasets();
     renderRightPanel();
-    if (name && !datasetDetails.has(name)) fetchDatasetDetail(name);
+    // Always refetch on click — the cache is only useful as an instant render
+    // hint; the source of truth lives on the server. This avoids stale "no
+    // sessions" states after deletes, renames, or background changes.
+    if (name) fetchDatasetDetail(name);
 }
 
 async function deleteDataset(name, fileCount) {

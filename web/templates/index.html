@@ -122,12 +122,40 @@
         </section>
     </div><!-- /.page -->
 
+    <div id="uploadOverlay" class="upload-overlay" hidden>
+        <div class="upload-overlay-card">
+            <div class="upload-overlay-title" id="uploadOverlayTitle">Uploading files</div>
+            <div class="upload-overlay-target" id="uploadOverlayTarget"></div>
+            <div class="upload-overlay-loader-wrap">
+                <span class="loader"></span>
+            </div>
+            <div class="upload-overlay-substatus" id="uploadOverlaySubstatus"></div>
+            <div class="upload-overlay-progress-bar">
+                <div class="upload-overlay-progress-fill" id="uploadOverlayFill"></div>
+            </div>
+            <div class="upload-overlay-stats">
+                <span id="uploadOverlayCount">0 / 0 files</span>
+                <span id="uploadOverlayPct">0%</span>
+            </div>
+            <div class="upload-overlay-meta" id="uploadOverlayMeta">0 B uploaded</div>
+            <div class="upload-overlay-actions">
+                <button type="button" class="upload-overlay-btn upload-overlay-btn--secondary"
+                        id="uploadOverlayPauseBtn" onclick="togglePause()">Pause</button>
+                <button type="button" class="upload-overlay-btn upload-overlay-btn--danger"
+                        onclick="clearFiles()">Cancel upload</button>
+            </div>
+        </div>
+    </div>
+
     <div id="lightbox" class="lightbox" hidden>
         <button class="lightbox-close" onclick="closeLightbox()" aria-label="Close">&times;</button>
         <button class="lightbox-nav lightbox-nav--prev" onclick="navLightbox(-1, event)" aria-label="Previous">&#x2039;</button>
         <button class="lightbox-nav lightbox-nav--next" onclick="navLightbox(1, event)" aria-label="Next">&#x203A;</button>
         <div class="lightbox-caption" id="lightboxCaption"></div>
-        <img class="lightbox-img" id="lightboxImg" alt="" onclick="event.stopPropagation()">
+        <div class="lightbox-stage" onclick="event.stopPropagation()">
+            <img class="lightbox-img" id="lightboxImg" alt="">
+            <span class="lightbox-loader" id="lightboxSpinner" hidden></span>
+        </div>
         <div class="lightbox-counter" id="lightboxCounter"></div>
     </div>
 

@@ -13,6 +13,7 @@ Docs:
 """
 
 import asyncio
+import io
 import json
 import logging
 import os
@@ -20,6 +21,8 @@ import shutil
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
+
+from PIL import Image
 
 import httpx
 from fastapi import FastAPI, File, Form, Query, UploadFile, HTTPException
@@ -188,8 +191,11 @@ def _session_dir(dataset: str, session: Optional[str], append: bool = False) -> 
 
 
 def _dir_summary(d: Path) -> dict:
-    """Summarize files in a directory tree."""
-    files = sorted(f for f in d.rglob("*") if f.is_file())
+    """Summarize files in a directory tree (excluding cached thumbnails)."""
+    files = sorted(
+        f for f in d.rglob("*")
+        if f.is_file() and THUMB_DIR_NAME not in f.parts
+    )
     total_bytes = sum(f.stat().st_size for f in files)
     return {
         "file_count": len(files),
@@ -424,6 +430,63 @@ async def get_session(dataset: str, session: str):
         "session": session,
         **_dir_summary(d),
     }
+
+
+# ---------------------------------------------------------------------------
+# Thumbnails (cached, on-demand) — keeps the dataset browser fast even when
+# the underlying images are 25 MB phone photos.
+# ---------------------------------------------------------------------------
+THUMB_DIR_NAME = ".thumbs"
+THUMB_DEFAULT_MAX_EDGE = 480
+THUMB_QUALITY = 78
+
+
+def _thumb_path(source: Path, max_edge: int) -> Path:
+    return source.parent / THUMB_DIR_NAME / f"{source.name}.{max_edge}.jpg"
+
+
+def _generate_thumb(source: Path, max_edge: int) -> Path:
+    out = _thumb_path(source, max_edge)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    with Image.open(source) as im:
+        im.thumbnail((max_edge, max_edge), Image.LANCZOS)
+        if im.mode not in ("RGB", "L"):
+            im = im.convert("RGB")
+        im.save(out, "JPEG", quality=THUMB_QUALITY, optimize=True)
+    return out
+
+
+@app.get("/thumb/{dataset}/{session}/{filename:path}")
+async def thumbnail(dataset: str, session: str, filename: str, max: int = THUMB_DEFAULT_MAX_EDGE):
+    """Return a cached JPEG thumbnail/preview for any image file.
+
+    Two practical sizes from the UI:
+      max=480  → small card thumbnails (default)
+      max=1920 → fast lightbox preview (replaces the 25 MB original)
+
+    Generated lazily on first request and cached under <session>/.thumbs/.
+    Cache-Control lets the browser keep the JPEG locally so revisits don't
+    even round-trip the server.
+    """
+    src = STORAGE_ROOT / dataset / session / filename
+    if not src.exists() or not src.is_file():
+        raise HTTPException(404, f"File not found: {dataset}/{session}/{filename}")
+    if src.suffix.lower() not in {".png", ".jpg", ".jpeg", ".webp", ".bmp"}:
+        # Not an image — fall back to the raw file.
+        return FileResponse(src, filename=src.name)
+    max_edge = max if 32 <= max <= 4096 else THUMB_DEFAULT_MAX_EDGE
+    thumb = _thumb_path(src, max_edge)
+    if not thumb.exists() or thumb.stat().st_mtime < src.stat().st_mtime:
+        try:
+            thumb = _generate_thumb(src, max_edge)
+        except Exception as e:
+            log.warning("thumbnail failed for %s: %s", src, e)
+            return FileResponse(src, filename=src.name)
+    return FileResponse(
+        thumb,
+        media_type="image/jpeg",
+        headers={"Cache-Control": "public, max-age=86400, immutable"},
+    )
 
 
 # ---------------------------------------------------------------------------
