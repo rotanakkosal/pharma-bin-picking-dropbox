@@ -309,16 +309,33 @@ def _session_dir(dataset: str, session: Optional[str], append: bool = False) -> 
 
 
 def _dir_summary(d: Path) -> dict:
-    """Summarize files in a directory tree (excluding cached thumbnails)."""
+    """Summarize files in a directory tree (excluding cached thumbnails).
+
+    ``depth_pairs`` lets the frontend render depth files distinctly: keys are
+    relative paths of files classified as depth, values are the relative path
+    of the RGB they were paired with at upload time (for the "used for masks
+    of …" hint).  Computed on every read so it stays correct after deletes.
+    """
     files = sorted(
         f for f in d.rglob("*")
         if f.is_file() and THUMB_DIR_NAME not in f.parts
     )
     total_bytes = sum(f.stat().st_size for f in files)
+
+    # Classify and pair so depth files can be linked back to their RGB sibling.
+    rgb_paths = [f for f in files if _classify_image(f) == "rgb"]
+    depth_paths = [f for f in files if _classify_image(f) == "depth"]
+    depth_pairs: dict[str, str] = {}
+    if depth_paths:
+        for rgb, depth in _pair_rgb_depth(rgb_paths, depth_paths):
+            if depth is not None:
+                depth_pairs[str(depth.relative_to(d))] = str(rgb.relative_to(d))
+
     return {
         "file_count": len(files),
         "total_size_bytes": total_bytes,
         "files": [str(f.relative_to(d)) for f in files],
+        "depth_pairs": depth_pairs,
     }
 
 
@@ -435,11 +452,16 @@ async def _do_upload(
             overlays[rgb] = overlay_path
 
     # Build the response entries from saved_paths in the original upload order.
+    # ``kind`` is exposed so the upload preview UI can render depth files
+    # with the gradient/DEPTH styling instead of the misleading "no mask"
+    # panel — even when the depth file's POST arrived in parallel with its
+    # RGB sibling and didn't see it directly.
     saved = []
     for fp in saved_paths:
         entry = {
             "filename": str(fp.relative_to(dest)),
             "size_bytes": fp.stat().st_size,
+            "kind": classifications.get(fp, "other"),
         }
         if fp in overlays:
             entry["overlay"] = str(overlays[fp].relative_to(dest))
@@ -589,10 +611,56 @@ def _thumb_path(source: Path, max_edge: int) -> Path:
     return source.parent / THUMB_DIR_NAME / f"{source.name}.{max_edge}.jpg"
 
 
+_DEPTH_MODES = {"I", "I;16", "I;16B", "I;16L", "I;16N", "F"}
+
+
+def _normalize_depth_for_preview(im: "Image.Image") -> "Image.Image":
+    """Render a 16-bit depth image as 8-bit grayscale.
+
+    Browsers can't display 16-bit PNGs meaningfully — they show them as
+    nearly-white because most depth values land near the top of uint16.
+    This produces the familiar normalized depth view (gradient where
+    closer = darker, far = lighter) by clipping to the bin-picking
+    workspace [250, 1500] mm and scaling to [0, 255].
+
+    Auto-detects 0.1mm (BOP-format) encoding via the same max-value
+    heuristic the inference server uses; values > 5000 are scaled by
+    0.1 first so T-LESS / ITODD depths render correctly.
+
+    Implemented with ``struct`` per-pixel because PIL's Image.point only
+    accepts linear scale+offset on "I" mode, not arbitrary callables.
+    """
+    import struct
+
+    # Normalize to "I" (32-bit signed) so we have one input format below.
+    src = im.convert("I") if im.mode != "I" else im
+    W, H = src.size
+    values = struct.unpack(f"<{W * H}i", src.tobytes())
+
+    # Auto-detect 0.1mm encoding. Use max because medians require sorting
+    # the whole flat sequence; max is O(N) and good enough for the
+    # heuristic.
+    max_v = max(values) if values else 0
+    scale = 0.1 if max_v > 5000 else 1.0
+
+    out = bytearray(W * H)
+    for i, v in enumerate(values):
+        mm = v * scale
+        if mm < 250:
+            continue                         # leave at 0 (bytearray default)
+        if mm > 1500:
+            out[i] = 255
+            continue
+        out[i] = int((mm - 250) * 255 / 1250)
+    return Image.frombytes("L", (W, H), bytes(out))
+
+
 def _generate_thumb(source: Path, max_edge: int) -> Path:
     out = _thumb_path(source, max_edge)
     out.parent.mkdir(parents=True, exist_ok=True)
     with Image.open(source) as im:
+        if im.mode in _DEPTH_MODES:
+            im = _normalize_depth_for_preview(im)
         im.thumbnail((max_edge, max_edge), Image.LANCZOS)
         if im.mode not in ("RGB", "L"):
             im = im.convert("RGB")
@@ -629,7 +697,12 @@ async def thumbnail(dataset: str, session: str, filename: str, max: int = THUMB_
     return FileResponse(
         thumb,
         media_type="image/jpeg",
-        headers={"Cache-Control": "public, max-age=86400, immutable"},
+        # Cache for an hour but allow revalidation against Last-Modified
+        # (FileResponse adds it automatically).  Dropping `immutable` means
+        # that when our thumb-generation logic changes and we regenerate
+        # the on-disk JPEG, browsers will pick up the new bytes within
+        # max-age, and `Ctrl+Shift+R` will refetch immediately.
+        headers={"Cache-Control": "public, max-age=3600"},
     )
 
 
