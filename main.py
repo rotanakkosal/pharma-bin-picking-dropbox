@@ -131,17 +131,20 @@ def _classify_image(path: Path) -> str:
 def _is_depth_for_rgb(rgb_stem: str, depth_stem: str) -> bool:
     """Return True if ``depth_stem`` looks like the depth sibling of ``rgb_stem``.
 
-    Accepts identical names or stems that share the RGB prefix followed by a
-    separator. Covers the common naming patterns:
-        IMG_001  ↔  IMG_001            (same name, different parent dir)
-        IMG_001  ↔  IMG_001_depth      (suffix with "_")
-        IMG_001  ↔  IMG_001.depth      (suffix with ".")
-        IMG_001  ↔  IMG_001-depth      (suffix with "-")
+    Bidirectional stem-prefix check.  Either side may be the "elaborated"
+    one — the depth-side suffix happens with explicit naming
+    (``IMG_001`` ↔ ``IMG_001_depth``), the rgb-side suffix happens when the
+    upload save loop has to rename to avoid a same-name collision in one
+    session (``000000`` ↔ ``000000_1``).  The shared prefix must be
+    followed by a separator on the longer side so unrelated stems like
+    ``IMG_010`` / ``IMG_01`` don't accidentally match.
     """
     if rgb_stem == depth_stem:
         return True
     if depth_stem.startswith(rgb_stem) and len(depth_stem) > len(rgb_stem):
         return depth_stem[len(rgb_stem)] in "_.-"
+    if rgb_stem.startswith(depth_stem) and len(rgb_stem) > len(depth_stem):
+        return rgb_stem[len(depth_stem)] in "_.-"
     return False
 
 
@@ -270,14 +273,20 @@ def _dataset_dir(dataset: str, append: bool = False) -> Path:
 
 
 def _session_dir(dataset: str, session: Optional[str], append: bool = False) -> Path:
-    """Return (and create) the directory for a session inside a dataset."""
+    """Return (and create) the directory for a session inside a dataset.
+
+    With ``append=True`` we reuse an existing session of the same name —
+    that path is taken by every batch-follower request so all parallel
+    uploads in one drag-and-drop end up sharing one session (and so the
+    RGB/depth pair-detector can see them together).  ``append=False``
+    auto-suffixes (`<name>_2`, `_3`, …) to keep two unrelated uploads
+    on the same day from clobbering each other's files.
+    """
     base = _dataset_dir(dataset, append=append)
     if session:
         safe_session = session.replace("..", "").strip("/")
         d = base / safe_session
-        # Even when appending the dataset, sessions still get the unique-name
-        # treatment so two same-day uploads don't overwrite each other's files.
-        if d.exists():
+        if d.exists() and not append:
             counter = 2
             while True:
                 candidate = base / f"{safe_session}_{counter}"
@@ -290,10 +299,11 @@ def _session_dir(dataset: str, session: Optional[str], append: bool = False) -> 
     # Auto-pick date-based session with _2, _3, … suffix for same-day reruns
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     d = base / today
-    counter = 2
-    while d.exists():
-        d = base / f"{today}_{counter}"
-        counter += 1
+    if not append:
+        counter = 2
+        while d.exists():
+            d = base / f"{today}_{counter}"
+            counter += 1
     d.mkdir(parents=True, exist_ok=True)
     return d
 
