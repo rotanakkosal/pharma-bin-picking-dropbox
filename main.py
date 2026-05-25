@@ -17,6 +17,7 @@ import io
 import json
 import logging
 import os
+import secrets
 import shutil
 from datetime import datetime, timezone
 from pathlib import Path
@@ -25,8 +26,8 @@ from typing import Optional
 from PIL import Image
 
 import httpx
-from fastapi import FastAPI, File, Form, Query, UploadFile, HTTPException
-from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
+from fastapi import FastAPI, File, Form, Query, Request, UploadFile, HTTPException
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
 # ---------------------------------------------------------------------------
@@ -43,6 +44,14 @@ INFERENCE_URL = os.environ.get("INFERENCE_URL", "http://127.0.0.1:8100").rstrip(
 INFERENCE_TIMEOUT = float(os.environ.get("INFERENCE_TIMEOUT", "30"))
 IMAGE_EXTS = {".png", ".jpg", ".jpeg", ".tif", ".tiff"}
 OVERLAY_SUFFIX = "_overlay.png"
+
+# Fake auth gate — single hardcoded credential pair. Override via env vars.
+# Not real security: cookie just has to match a per-process secret. Anyone
+# with the cookie value is "logged in" until the server restarts.
+LOGIN_USERNAME = os.environ.get("LOGIN_USERNAME", "admin")
+LOGIN_PASSWORD = os.environ.get("LOGIN_PASSWORD", "admin")
+AUTH_COOKIE_NAME = "dropbox_auth"
+AUTH_COOKIE_VALUE = secrets.token_urlsafe(32)
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 log = logging.getLogger("dropbox")
@@ -231,11 +240,63 @@ async def _run_inference(
 
 
 # ---------------------------------------------------------------------------
+# Fake auth gate
+# ---------------------------------------------------------------------------
+def _is_authed(request: Request) -> bool:
+    return secrets.compare_digest(
+        request.cookies.get(AUTH_COOKIE_NAME, ""), AUTH_COOKIE_VALUE
+    )
+
+
+@app.get("/login", response_class=HTMLResponse)
+async def login_page(error: int = 0):
+    """Serve the login form. ?error=1 highlights bad credentials."""
+    html = (TEMPLATES_DIR / "login.html").read_text()
+    html = html.replace("<!--ERROR-->", '<div class="login-error">Invalid username or password.</div>' if error else "")
+    return HTMLResponse(
+        content=html,
+        headers={
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            "Pragma": "no-cache",
+            "Expires": "0",
+        },
+    )
+
+
+@app.post("/login")
+async def login_submit(username: str = Form(...), password: str = Form(...)):
+    ok = (
+        secrets.compare_digest(username, LOGIN_USERNAME)
+        and secrets.compare_digest(password, LOGIN_PASSWORD)
+    )
+    if not ok:
+        return RedirectResponse("/login?error=1", status_code=303)
+    resp = RedirectResponse("/", status_code=303)
+    resp.set_cookie(
+        AUTH_COOKIE_NAME,
+        AUTH_COOKIE_VALUE,
+        httponly=True,
+        samesite="lax",
+        max_age=60 * 60 * 24 * 7,
+    )
+    return resp
+
+
+@app.get("/logout")
+async def logout():
+    resp = RedirectResponse("/login", status_code=303)
+    resp.delete_cookie(AUTH_COOKIE_NAME)
+    return resp
+
+
+# ---------------------------------------------------------------------------
 # Web UI
 # ---------------------------------------------------------------------------
 @app.get("/", response_class=HTMLResponse)
-async def web_ui():
-    """Serve the drag-and-drop upload page."""
+async def web_ui(request: Request):
+    """Serve the drag-and-drop upload page (login required)."""
+    if not _is_authed(request):
+        return RedirectResponse("/login", status_code=303)
     html = (TEMPLATES_DIR / "index.html").read_text()
     return HTMLResponse(
         content=html,
