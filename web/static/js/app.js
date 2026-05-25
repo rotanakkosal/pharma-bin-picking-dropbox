@@ -1075,6 +1075,54 @@ async function pickSessionName(dataset) {
     return base;
 }
 
+// Pair RGB + depth files in the browser before upload, so each pair lands at
+// the server in ONE POST and the server-side _pair_rgb_depth can match them.
+// Without this, the per-file POST pool sends RGB and depth in separate requests,
+// the server sees each one alone, and falls back to dummy depth → 0 picker dots.
+// Rule mirrors the server's _is_depth_for_rgb: same parent dir + bidirectional
+// stem-prefix with a [_.-] separator on the longer side. Groups are capped at
+// 2 items so an unrelated third file with the same prefix doesn't get sucked in.
+function _stemOf(path) {
+    const name = path.split('/').pop() || path;
+    const dot = name.lastIndexOf('.');
+    return dot > 0 ? name.slice(0, dot) : name;
+}
+function _parentOf(path) {
+    const i = path.lastIndexOf('/');
+    return i < 0 ? '' : path.slice(0, i);
+}
+function _stemsPair(a, b) {
+    if (a === b) return true;
+    if (b.startsWith(a) && b.length > a.length) return '_.-'.includes(b[a.length]);
+    if (a.startsWith(b) && a.length > b.length) return '_.-'.includes(a[b.length]);
+    return false;
+}
+function pairUploadGroups(items) {
+    const groups = [];
+    for (const item of items) {
+        const stem = _stemOf(item.path);
+        const parent = _parentOf(item.path);
+        let placed = false;
+        for (const g of groups) {
+            if (g.length >= 2) continue;
+            if (g[0]._parent !== parent) continue;
+            if (_stemsPair(g[0]._stem, stem)) {
+                g.push(item);
+                if (stem.length < g[0]._stem.length) g[0]._stem = stem;
+                placed = true;
+                break;
+            }
+        }
+        if (!placed) {
+            const g = [item];
+            g[0]._parent = parent;
+            g[0]._stem = stem;
+            groups.push(g);
+        }
+    }
+    return groups;
+}
+
 async function upload() {
     if (isUploading) return;
     const dataset = document.getElementById('dataset').value.trim();
@@ -1105,10 +1153,15 @@ async function upload() {
     // (auto-suffixed) dataset/session, not one per file.
     const batchId = `batch_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
 
-    // Concurrency pool — each worker awaits pause before picking up the next file
+    // Group the queue into RGB+depth pairs (where pairing applies) so each
+    // POST carries both files together — the server can then pair them and
+    // pass the depth to /infer, which the picker needs to produce dots.
+    const groups = pairUploadGroups(queue);
+
+    // Concurrency pool — each worker awaits pause before picking up the next group
     let idx = 0;
     const worker = async () => {
-        while (idx < queue.length) {
+        while (idx < groups.length) {
             // Block here while paused (re-check every 150ms)
             while (isPaused) {
                 await new Promise(r => setTimeout(r, 150));
@@ -1116,12 +1169,12 @@ async function upload() {
                 if (!isUploading) return;
             }
             if (!isUploading) return;
-            const item = queue[idx++];
-            await uploadOne(item, uploadUrl, session, metadata, dataset, batchId);
+            const group = groups[idx++];
+            await uploadGroup(group, uploadUrl, session, metadata, dataset, batchId);
         }
     };
     await Promise.all(
-        Array.from({ length: Math.min(PARALLEL_LIMIT, queue.length) }, worker)
+        Array.from({ length: Math.min(PARALLEL_LIMIT, groups.length) }, worker)
     );
 
     isUploading = false;
@@ -1135,6 +1188,128 @@ function togglePause() {
     if (!isUploading) return;
     isPaused = !isPaused;
     renderFilesImmediate();
+}
+
+// POST a group of 1-2 paired files (RGB + optional depth) in a single
+// multipart request. Server's _pair_rgb_depth then sees both files in the
+// same _do_upload call and forwards (RGB, depth) to /infer together.
+// Per-item status fields (status/progress/uploadResult) are tracked for every
+// item in the group; XHR progress applies to the whole upload.
+function uploadGroup(group, uploadUrl, session, metadata, dataset, batchId) {
+    return new Promise((resolve) => {
+        const fd = new FormData();
+        if (session) fd.append('session', session);
+        if (metadata) fd.append('metadata', metadata);
+        if (batchId) fd.append('batch_id', batchId);
+
+        const savePaths = [];
+        for (const item of group) {
+            let savePath = item.path;
+            if (dataset && savePath.startsWith(dataset + '/')) {
+                savePath = savePath.slice(dataset.length + 1);
+            }
+            savePaths.push(savePath);
+            fd.append('files', item.file, item.file.name);
+            fd.append('paths', savePath);
+        }
+
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', uploadUrl);
+        activeUploadXHRs.add(xhr);
+
+        const finish = () => {
+            activeUploadXHRs.delete(xhr);
+            resolve();
+        };
+
+        for (const item of group) {
+            item.status = 'uploading';
+            item.progress = 0;
+            item.bytesUploaded = false;
+        }
+        renderFiles();
+
+        xhr.upload.addEventListener('progress', (e) => {
+            if (e.lengthComputable) {
+                const pct = Math.round((e.loaded / e.total) * 100);
+                for (const item of group) item.progress = pct;
+                renderFiles();
+            }
+        });
+
+        xhr.upload.addEventListener('loadend', () => {
+            for (const item of group) {
+                item.bytesUploaded = true;
+                item.progress = 100;
+            }
+            renderFiles();
+        });
+
+        xhr.onload = () => {
+            if (xhr.status >= 200 && xhr.status < 300) {
+                let resp = null;
+                try { resp = JSON.parse(xhr.responseText); } catch (e) {}
+                // Server returns one "uploaded" entry per file in the POST,
+                // keyed by relative filename. Match each item back to its entry
+                // so the row can render its overlay/thumb just like the
+                // single-file path did.
+                const byName = new Map();
+                if (resp && Array.isArray(resp.uploaded)) {
+                    for (const u of resp.uploaded) byName.set(u.filename, u);
+                }
+                for (let gi = 0; gi < group.length; gi++) {
+                    const item = group[gi];
+                    item.status = 'done';
+                    item.progress = 100;
+                    const u = byName.get(savePaths[gi]) || (resp && (resp.uploaded || [])[gi]);
+                    if (u && resp && resp.dataset && resp.session) {
+                        const buildUrl = (rel) =>
+                            `/datasets/${encodeURIComponent(resp.dataset)}/${encodeURIComponent(resp.session)}/${rel.split('/').map(encodeURIComponent).join('/')}`;
+                        item.uploadResult = {
+                            sourceUrl: buildUrl(u.filename),
+                            overlayUrl: u.overlay ? buildUrl(u.overlay) : null,
+                            sourceThumb: thumbUrl(resp.dataset, resp.session, u.filename),
+                            overlayThumb: u.overlay ? thumbUrl(resp.dataset, resp.session, u.overlay) : null,
+                            sourcePreview: thumbUrl(resp.dataset, resp.session, u.filename, LIGHTBOX_MAX_EDGE),
+                            overlayPreview: u.overlay ? thumbUrl(resp.dataset, resp.session, u.overlay, LIGHTBOX_MAX_EDGE) : null,
+                            kind: u.kind || 'rgb',
+                            pairedRgb: null,
+                            label: u.filename,
+                        };
+                    }
+                }
+            } else {
+                for (const item of group) {
+                    item.status = 'error';
+                    item.error = `HTTP ${xhr.status}`;
+                }
+            }
+            renderFiles();
+            finish();
+        };
+
+        xhr.onerror = () => {
+            for (const item of group) {
+                item.status = 'error';
+                item.error = 'Network error';
+            }
+            renderFiles();
+            finish();
+        };
+
+        xhr.onabort = () => { finish(); };
+
+        try {
+            xhr.send(fd);
+        } catch (e) {
+            for (const item of group) {
+                item.status = 'error';
+                item.error = e.message;
+            }
+            renderFiles();
+            finish();
+        }
+    });
 }
 
 function uploadOne(item, uploadUrl, session, metadata, dataset, batchId) {
