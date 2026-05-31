@@ -152,6 +152,14 @@ function autofillDatasetName() {
 document.addEventListener('DOMContentLoaded', () => {
     const input = document.getElementById('dataset');
     if (input) input.addEventListener('input', () => { delete input.dataset.autofilled; });
+
+    // Auto-open the "What to upload?" popout once, right after login.
+    // The login redirect sets ?welcome=1; we open the popup and strip the
+    // param so a plain refresh afterwards does not keep re-showing it.
+    if (new URLSearchParams(window.location.search).has('welcome')) {
+        openReqModal();
+        history.replaceState(null, '', window.location.pathname);
+    }
 });
 
 function removeFile(index) {
@@ -460,6 +468,32 @@ document.addEventListener('keydown', (e) => {
 document.addEventListener('click', (e) => {
     const box = document.getElementById('lightbox');
     if (box && !box.hidden && e.target === box) closeLightbox();
+});
+
+// ---- "What to upload?" requirements popout ----
+function openReqModal() {
+    const box = document.getElementById('reqModal');
+    if (!box) return;
+    box.hidden = false;
+    document.body.style.overflow = 'hidden';
+}
+
+function closeReqModal() {
+    const box = document.getElementById('reqModal');
+    if (!box) return;
+    box.hidden = true;
+    document.body.style.overflow = '';
+}
+
+// Close on Escape or click on the dark backdrop (outside the card).
+document.addEventListener('keydown', (e) => {
+    const box = document.getElementById('reqModal');
+    if (box && !box.hidden && e.key === 'Escape') closeReqModal();
+});
+
+document.addEventListener('click', (e) => {
+    const box = document.getElementById('reqModal');
+    if (box && !box.hidden && e.target === box) closeReqModal();
 });
 
 // Trigger a one-shot CSS spin animation on an element

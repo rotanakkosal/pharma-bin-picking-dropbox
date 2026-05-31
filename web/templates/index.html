@@ -26,6 +26,14 @@
                         <div class="panel-header-title">Upload files</div>
                         <div class="panel-header-subtitle">Select and upload the files of your choice</div>
                     </div>
+                    <button type="button" class="req-help-btn" onclick="openReqModal()" title="What to upload to get grasp points">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"/>
+                            <line x1="12" y1="16" x2="12" y2="12"/>
+                            <line x1="12" y1="8" x2="12.01" y2="8"/>
+                        </svg>
+                        <span>What to upload?</span>
+                    </button>
                     <button class="panel-header-close" id="leftPanelClose" onclick="clearFiles()" title="Clear all">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <circle cx="12" cy="12" r="10"/>
@@ -121,6 +129,140 @@
             </div>
         </section>
     </div><!-- /.page -->
+
+    <!-- "What to upload" requirements popout -->
+    <div id="reqModal" class="req-modal" hidden>
+        <div class="req-card" role="dialog" aria-modal="true" aria-labelledby="reqTitle">
+            <div class="req-head">
+                <div class="req-head-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="9"/>
+                        <circle cx="12" cy="12" r="3.5"/>
+                        <line x1="12" y1="2.5" x2="12" y2="6"/>
+                        <line x1="12" y1="18" x2="12" y2="21.5"/>
+                        <line x1="2.5" y1="12" x2="6" y2="12"/>
+                        <line x1="18" y1="12" x2="21.5" y2="12"/>
+                    </svg>
+                </div>
+                <div class="req-head-text">
+                    <div class="req-title" id="reqTitle">What to upload to get grasp points</div>
+                    <div class="req-sub">The server returns one suction pick point per bottle. It only works when you give it <strong>both</strong> images below, named as a pair.</div>
+                </div>
+                <button type="button" class="req-close" onclick="closeReqModal()" aria-label="Close">&times;</button>
+            </div>
+
+            <div class="req-body">
+
+                <!-- Two required inputs -->
+                <div class="req-section-label">Per scene, upload 2 files</div>
+                <div class="req-inputs">
+                    <div class="req-input-card">
+                        <div class="req-input-top">
+                            <span class="req-num">1</span>
+                            <span class="req-input-name">Color photo (RGB)</span>
+                            <span class="req-tag req-tag--req">Required</span>
+                        </div>
+                        <div class="req-chips">
+                            <span class="req-chip">.png / .jpg</span>
+                            <span class="req-chip">8 bit</span>
+                            <span class="req-chip">3 channels</span>
+                        </div>
+                        <div class="req-input-desc">A normal top down color picture of the bin. This is what the model sees to find each bottle.</div>
+                    </div>
+
+                    <div class="req-input-card req-input-card--depth">
+                        <div class="req-input-top">
+                            <span class="req-num req-num--depth">2</span>
+                            <span class="req-input-name">Depth map</span>
+                            <span class="req-tag req-tag--key">Unlocks pick point</span>
+                        </div>
+                        <div class="req-chips">
+                            <span class="req-chip req-chip--depth">.png</span>
+                            <span class="req-chip req-chip--depth">16 bit</span>
+                            <span class="req-chip req-chip--depth">1 channel</span>
+                            <span class="req-chip req-chip--depth">millimeters</span>
+                        </div>
+                        <div class="req-input-desc">Distance to every pixel, saved straight from the L515 depth stream. Working range about 250 to 1500&nbsp;mm.</div>
+                    </div>
+                </div>
+
+                <!-- Warning callout -->
+                <div class="req-callout">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                        <line x1="12" y1="9" x2="12" y2="13"/>
+                        <line x1="12" y1="17" x2="12.01" y2="17"/>
+                    </svg>
+                    <div><strong>No depth means no pick point.</strong> An RGB only upload still works, but you get bottle outlines only and the central grasp dot is skipped.</div>
+                </div>
+
+                <!-- Pairing rule -->
+                <div class="req-section-label">Name the pair the same</div>
+                <div class="req-pair-help">The server matches RGB to depth by <strong>filename</strong>, not by folder. Give a photo and its depth the same base name.</div>
+                <div class="req-pair-grid">
+                    <div class="req-pair-col">
+                        <div class="req-pair-tag">Option A: split folders</div>
+<pre class="req-tree">my_capture/
+├─ RGB/
+│   ├─ 000000.png
+│   └─ 000001.png
+└─ Depth/
+    ├─ 000000.png   ← same name
+    └─ 000001.png</pre>
+                    </div>
+                    <div class="req-pair-col">
+                        <div class="req-pair-tag">Option B: one folder, suffix</div>
+<pre class="req-tree">my_capture/
+├─ IMG_001.png        (rgb)
+├─ IMG_001_depth.png  (depth)
+├─ IMG_002.png
+└─ IMG_002_depth.png</pre>
+                    </div>
+                </div>
+
+                <!-- Spec table -->
+                <div class="req-section-label">Exact data types</div>
+                <table class="req-table">
+                    <thead>
+                        <tr><th>File</th><th>Format</th><th>Bit depth</th><th>Channels</th><th>Pixel value means</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="req-dot req-dot--rgb"></span>RGB</td>
+                            <td>PNG / JPG</td>
+                            <td>8 bit</td>
+                            <td>3 (R,G,B)</td>
+                            <td>Color</td>
+                        </tr>
+                        <tr>
+                            <td><span class="req-dot req-dot--depth"></span>Depth</td>
+                            <td>PNG</td>
+                            <td>16 bit</td>
+                            <td>1 (grayscale)</td>
+                            <td>Distance in mm</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div class="req-note">The server reads the actual image content, not the filename. A depth map saved as 8 bit or 3 channel will be treated as a normal photo and ignored for picking. Camera intrinsics default to the L515. Add notes in the optional Metadata JSON box if needed.</div>
+
+                <!-- What you get back -->
+                <div class="req-section-label">What comes back</div>
+                <div class="req-result">
+                    <div class="req-result-text">An <strong>overlay PNG</strong> per scene: each bottle outlined, with one colored dot at its suction pick point.</div>
+                    <div class="req-legend">
+                        <span class="req-legend-item"><span class="req-dot req-dot--green"></span>Good grip</span>
+                        <span class="req-legend-item"><span class="req-dot req-dot--amber"></span>OK grip</span>
+                        <span class="req-legend-item"><span class="req-dot req-dot--red"></span>Weak grip</span>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="req-foot">
+                <button type="button" class="req-foot-btn" onclick="closeReqModal()">Got it</button>
+            </div>
+        </div>
+    </div>
 
     <div id="uploadOverlay" class="upload-overlay" hidden>
         <div class="upload-overlay-card">

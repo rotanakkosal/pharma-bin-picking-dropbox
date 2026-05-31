@@ -271,7 +271,9 @@ async def login_submit(username: str = Form(...), password: str = Form(...)):
     )
     if not ok:
         return RedirectResponse("/login?error=1", status_code=303)
-    resp = RedirectResponse("/", status_code=303)
+    # welcome=1 makes the "What to upload?" popout auto-open once on the
+    # page that loads right after login (the frontend strips the param).
+    resp = RedirectResponse("/?welcome=1", status_code=303)
     resp.set_cookie(
         AUTH_COOKIE_NAME,
         AUTH_COOKIE_VALUE,
