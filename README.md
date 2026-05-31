@@ -6,6 +6,18 @@ Built with [FastAPI](https://fastapi.tiangolo.com/). Accepts any file type, orga
 
 ---
 
+## Screenshots
+
+**Web UI.** Drag and drop upload, live mask and depth previews, and a searchable dataset browser:
+
+![Dropbox web UI](image/dropbox-ui.png)
+
+**"What to upload?" popup.** Opens automatically after login, showing the RGB and depth files and naming rule needed to get grasp points:
+
+![Upload requirements popup](image/upload-requirements.png)
+
+---
+
 ## Features
 
 - **Drag-and-drop web UI** at `/` for non-technical users
