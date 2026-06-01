@@ -2574,3 +2574,34 @@ body {
 }
 
 .req-foot-btn:hover { background: #7a1d34; }
+
+/* --- Language switch (fixed top-right, on every screen) --- */
+.lang-switch {
+    position: fixed;
+    top: 1rem;
+    right: 1rem;
+    z-index: 1000;
+    display: inline-flex;
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 999px;
+    padding: 3px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+.lang-switch button {
+    border: none;
+    background: transparent;
+    color: #6b7280;
+    font-family: inherit;
+    font-size: 0.78rem;
+    font-weight: 600;
+    padding: 0.3rem 0.7rem;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+}
+.lang-switch button:hover { color: #292D32; }
+.lang-switch button.active {
+    background: #292D32;
+    color: #ffffff;
+}

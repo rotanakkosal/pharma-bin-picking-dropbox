@@ -187,12 +187,12 @@ function syncLeftClose() {
     btn.disabled = isUploading;
     btn.style.opacity = isUploading ? '0.35' : '';
     btn.style.cursor = isUploading ? 'not-allowed' : '';
-    btn.title = isUploading ? 'Use the right panel to cancel' : 'Clear all';
+    btn.title = isUploading ? t('use_right_panel_cancel') : t('clear_all');
 }
 
 function clearFiles() {
     if (isUploading) {
-        if (!confirm('An upload is in progress. Cancel and remove all files?')) return;
+        if (!confirm(t('confirm_cancel_upload'))) return;
         // Abort all in-flight requests
         for (const xhr of activeUploadXHRs) {
             try { xhr.abort(); } catch (e) {}
@@ -279,7 +279,7 @@ function renderEntry(entry, fileUrl, sessionName) {
         lightboxItems.push({
             url: sourcePreview,
             thumbUrl: sourceThumb,
-            caption: `${baseCaption} — depth (normalized)`,
+            caption: `${baseCaption} — ${t('caption_depth')}`,
         });
         const escPaired = (entry.pairedRgb || '').replace(/"/g, '&quot;');
         return `
@@ -287,15 +287,15 @@ function renderEntry(entry, fileUrl, sessionName) {
                 <div class="image-card-thumbs">
                     <button type="button" class="image-card-thumb"
                             onclick="openLightbox(${sourceIdx})"
-                            title="Depth (normalized [250–1500] mm) — click to enlarge">
+                            title="${t('depth_normalized_title')}">
                         <img src="${sourceThumb}" alt="${escName} depth" loading="lazy">
-                        <span class="image-card-label image-card-label--depth">depth</span>
+                        <span class="image-card-label image-card-label--depth">${t('depth_label')}</span>
                     </button>
-                    <div class="image-card-thumb image-card-thumb--depth-info" title="${escPaired ? 'Used as the depth channel for ' + escPaired : 'Depth file (no paired RGB)'}">
+                    <div class="image-card-thumb image-card-thumb--depth-info" title="${escPaired ? t('used_as_depth_channel', escPaired) : t('depth_file_no_rgb_title')}">
                         <span class="image-card-depth-text">
                             ${escPaired
-                                ? `Used for masks of<br><strong>${escPaired}</strong>`
-                                : `Depth file<br><span style="opacity:0.7;">(no paired RGB)</span>`}
+                                ? t('used_for_masks_of', escPaired)
+                                : t('depth_file_no_rgb')}
                         </span>
                     </div>
                 </div>
@@ -311,7 +311,7 @@ function renderEntry(entry, fileUrl, sessionName) {
     lightboxItems.push({
         url: sourcePreview,
         thumbUrl: sourceThumb,
-        caption: `${baseCaption} — original`,
+        caption: `${baseCaption} — ${t('caption_original')}`,
     });
 
     let overlayIdx = -1;
@@ -320,7 +320,7 @@ function renderEntry(entry, fileUrl, sessionName) {
         lightboxItems.push({
             url: overlayPreview,
             thumbUrl: overlayThumb,
-            caption: `${baseCaption} — masks`,
+            caption: `${baseCaption} — ${t('caption_masks')}`,
         });
     }
 
@@ -329,19 +329,19 @@ function renderEntry(entry, fileUrl, sessionName) {
             <div class="image-card-thumbs">
                 <button type="button" class="image-card-thumb"
                         onclick="openLightbox(${sourceIdx})"
-                        title="Original — click to enlarge">
+                        title="${t('original_title')}">
                     <img src="${sourceThumb}" alt="${escName}" loading="lazy">
-                    <span class="image-card-label">original</span>
+                    <span class="image-card-label">${t('original_label')}</span>
                 </button>
                 ${overlayThumb ? `
                     <button type="button" class="image-card-thumb image-card-thumb--mask"
                             onclick="openLightbox(${overlayIdx})"
-                            title="Mask overlay — click to enlarge">
+                            title="${t('mask_overlay_title')}">
                         <img src="${overlayThumb}" alt="${escName} overlay" loading="lazy">
-                        <span class="image-card-label image-card-label--mask">masks</span>
+                        <span class="image-card-label image-card-label--mask">${t('masks_label')}</span>
                     </button>` : `
-                    <div class="image-card-thumb image-card-thumb--empty" title="No mask available">
-                        <span class="image-card-empty-text">no mask</span>
+                    <div class="image-card-thumb image-card-thumb--empty" title="${t('no_mask_available')}">
+                        <span class="image-card-empty-text">${t('no_mask')}</span>
                     </div>`}
             </div>
             <div class="image-card-name" title="${escName}">${entry.path}</div>
@@ -646,13 +646,13 @@ function renderFolderRow(node, depth) {
 
     let statusHtml = '';
     if (stats.errorCount > 0) {
-        statusHtml = `<span class="tree-status error">${stats.errorCount} failed</span>`;
+        statusHtml = `<span class="tree-status error">${t('failed_count', stats.errorCount)}</span>`;
     } else if (showProgress) {
         statusHtml = `
             <div class="tree-mini-bar"><div class="tree-mini-bar-fill" style="width:${pct}%"></div></div>
             <span class="tree-status uploading">${stats.doneCount}/${stats.fileCount}</span>`;
     } else if (stats.doneCount === stats.fileCount && stats.fileCount > 0) {
-        statusHtml = `<span class="tree-status done">${ICON_CHECK}Done</span>`;
+        statusHtml = `<span class="tree-status done">${ICON_CHECK}${t('status_done')}</span>`;
     }
 
     const safePath = node.path.replace(/'/g, "\\'");
@@ -666,11 +666,11 @@ function renderFolderRow(node, depth) {
             </div>
             <div class="tree-row-stats">
                 ${statusHtml}
-                <span>${stats.fileCount} file${stats.fileCount > 1 ? 's' : ''}</span>
+                <span>${t('files_count', stats.fileCount)}</span>
                 <span>·</span>
                 <span>${formatSize(stats.totalSize)}</span>
             </div>
-            <button class="tree-row-action" onclick="event.stopPropagation(); removeFolder('${safePath}')" title="Remove folder">${ICON_TRASH}</button>
+            <button class="tree-row-action" onclick="event.stopPropagation(); removeFolder('${safePath}')" title="${t('remove_folder')}">${ICON_TRASH}</button>
         </div>`;
 }
 
@@ -686,9 +686,9 @@ function renderFileRow(node, depth) {
             <div class="tree-mini-bar"><div class="tree-mini-bar-fill" style="width:${item.progress || 0}%"></div></div>
             <span class="tree-status uploading"><span class="spinner"></span>${item.progress || 0}%</span>`;
     } else if (item.status === 'done') {
-        statusHtml = `<span class="tree-status done">${ICON_CHECK}Done</span>`;
+        statusHtml = `<span class="tree-status done">${ICON_CHECK}${t('status_done')}</span>`;
     } else if (item.status === 'error') {
-        statusHtml = `<span class="tree-status error">Failed</span>`;
+        statusHtml = `<span class="tree-status error">${t('status_failed')}</span>`;
     }
 
     // Inline preview shown right after a successful upload — original + mask
@@ -704,13 +704,13 @@ function renderFileRow(node, depth) {
                 <div class="upload-preview">
                     <button type="button" class="upload-preview-thumb"
                             onclick="openUploadPreview(${node.index}, 0)"
-                            title="Depth (normalized [250–1500] mm) — click to enlarge">
+                            title="${t('depth_normalized_title')}">
                         <img src="${r.sourceThumb || r.sourceUrl}" alt="depth" loading="lazy">
-                        <span class="upload-preview-label upload-preview-label--depth">depth</span>
+                        <span class="upload-preview-label upload-preview-label--depth">${t('depth_label')}</span>
                     </button>
-                    <div class="upload-preview-thumb upload-preview-thumb--depth-info" title="Depth file — used as the depth channel for inference of its RGB sibling">
+                    <div class="upload-preview-thumb upload-preview-thumb--depth-info" title="${t('depth_file_info_title')}">
                         <span class="upload-preview-depth-text">
-                            Depth file<br><span style="opacity:0.7;">used for RGB inference</span>
+                            ${t('depth_used_for_rgb')}
                         </span>
                     </div>
                 </div>`;
@@ -719,19 +719,19 @@ function renderFileRow(node, depth) {
                 <div class="upload-preview">
                     <button type="button" class="upload-preview-thumb"
                             onclick="openUploadPreview(${node.index}, 0)"
-                            title="Original — click to enlarge">
+                            title="${t('original_title')}">
                         <img src="${r.sourceThumb || r.sourceUrl}" alt="original" loading="lazy">
-                        <span class="upload-preview-label">original</span>
+                        <span class="upload-preview-label">${t('original_label')}</span>
                     </button>
                     ${r.overlayUrl ? `
                         <button type="button" class="upload-preview-thumb upload-preview-thumb--mask"
                                 onclick="openUploadPreview(${node.index}, 1)"
-                                title="Mask overlay — click to enlarge">
+                                title="${t('mask_overlay_title')}">
                             <img src="${r.overlayThumb || r.overlayUrl}" alt="masks" loading="lazy">
-                            <span class="upload-preview-label upload-preview-label--mask">masks</span>
+                            <span class="upload-preview-label upload-preview-label--mask">${t('masks_label')}</span>
                         </button>` : `
-                        <div class="upload-preview-thumb upload-preview-thumb--empty" title="No mask available">
-                            <span class="upload-preview-empty">no mask</span>
+                        <div class="upload-preview-thumb upload-preview-thumb--empty" title="${t('no_mask_available')}">
+                            <span class="upload-preview-empty">${t('no_mask')}</span>
                         </div>`}
                 </div>`;
         }
@@ -755,7 +755,7 @@ function renderFileRow(node, depth) {
                 ${statusHtml}
                 <span>${sizeLabel}</span>
             </div>
-            <button class="tree-row-action" onclick="removeFile(${node.index})" title="Remove">${ICON_TRASH}</button>
+            <button class="tree-row-action" onclick="removeFile(${node.index})" title="${t('remove')}">${ICON_TRASH}</button>
         </div>`;
 }
 
@@ -772,13 +772,13 @@ function openUploadPreview(fileIndex, which) {
         items.push({
             url: r.sourcePreview || r.sourceUrl,
             thumbUrl: r.sourceThumb,
-            caption: `${r.label} — original`,
+            caption: `${r.label} — ${t('caption_original')}`,
         });
         const overlayIdx = r.overlayUrl ? items.length : -1;
         if (r.overlayUrl) items.push({
             url: r.overlayPreview || r.overlayUrl,
             thumbUrl: r.overlayThumb,
-            caption: `${r.label} — masks`,
+            caption: `${r.label} — ${t('caption_masks')}`,
         });
         if (i === fileIndex) {
             target = (which === 1 && overlayIdx >= 0) ? overlayIdx : sourceIdx;
@@ -875,30 +875,28 @@ function syncUploadOverlay() {
     const titleEl = document.getElementById('uploadOverlayTitle');
     if (titleEl) {
         titleEl.textContent = stillUploading
-            ? 'Uploading & processing files'
+            ? t('uploading_processing')
             : awaitingInference > 0
-                ? 'Processing masks…'
-                : 'Finishing up…';
+                ? t('processing_masks')
+                : t('finishing_up');
     }
     const subEl = document.getElementById('uploadOverlaySubstatus');
     if (subEl) {
         if (awaitingInference > 0 && !stillUploading) {
-            subEl.textContent =
-                `Running mask inference on ${awaitingInference} file${awaitingInference === 1 ? '' : 's'}…`;
+            subEl.textContent = t('running_inference', awaitingInference);
         } else if (awaitingInference > 0) {
-            subEl.textContent =
-                `${awaitingInference} file${awaitingInference === 1 ? '' : 's'} waiting for masks`;
+            subEl.textContent = t('waiting_for_masks', awaitingInference);
         } else {
             subEl.textContent = '';
         }
     }
 
     document.getElementById('uploadOverlayCount').textContent =
-        `${doneCount} / ${n} file${n === 1 ? '' : 's'}`;
+        t('files_ratio', { done: doneCount, total: n });
     document.getElementById('uploadOverlayPct').textContent = `${pct}%`;
     document.getElementById('uploadOverlayMeta').textContent =
-        `${formatSize(uploadedBytes)} of ${formatSize(totalBytes)}` +
-        (errCount > 0 ? ` · ${errCount} failed` : '');
+        t('bytes_of', { a: formatSize(uploadedBytes), b: formatSize(totalBytes) }) +
+        (errCount > 0 ? ` · ${t('failed_count', errCount)}` : '');
     document.getElementById('uploadOverlayFill').style.width = `${pct}%`;
 
     const targetEl = document.getElementById('uploadOverlayTarget');
@@ -907,11 +905,11 @@ function syncUploadOverlay() {
     if (targetEl) {
         targetEl.textContent = dataset
             ? (session ? `${dataset} / ${session}` : dataset)
-            : 'auto-generated dataset';
+            : t('auto_generated_dataset');
     }
 
     const pauseBtn = document.getElementById('uploadOverlayPauseBtn');
-    if (pauseBtn) pauseBtn.textContent = isPaused ? 'Resume' : 'Pause';
+    if (pauseBtn) pauseBtn.textContent = isPaused ? t('resume') : t('pause');
 
     ov.hidden = false;
 }
@@ -938,12 +936,10 @@ function syncDropzoneSummary() {
     }
     const totalBytes = selectedFiles.reduce((s, f) => s + (f.file.size || 0), 0);
     const doneCount = n - pendingCount;
-    countEl.textContent = `${n} file${n === 1 ? '' : 's'} selected`;
-    metaEl.textContent = isUploading
-        ? `${formatSize(totalBytes)} · ${doneCount}/${n} uploaded`
-        : doneCount > 0
-            ? `${formatSize(totalBytes)} · ${doneCount}/${n} uploaded`
-            : `${formatSize(totalBytes)} ready to upload`;
+    countEl.textContent = t('files_selected', n);
+    metaEl.textContent = (isUploading || doneCount > 0)
+        ? t('size_uploaded', { size: formatSize(totalBytes), done: doneCount, total: n })
+        : t('size_ready', formatSize(totalBytes));
     dz.classList.add('has-files');
     empty.hidden = true;
     summary.hidden = false;
@@ -978,18 +974,18 @@ function renderUploadPreviewHTML() {
 
     let summaryMeta;
     if (uploadingCount > 0 || doneCount > 0) {
-        summaryMeta = `${doneCount}/${selectedFiles.length} uploaded`;
-        if (errorCount > 0) summaryMeta += ` · <span style="color:#dc2626;">${errorCount} failed</span>`;
+        summaryMeta = t('uploaded_ratio', { done: doneCount, total: selectedFiles.length });
+        if (errorCount > 0) summaryMeta += ` · <span style="color:#dc2626;">${t('failed_count', errorCount)}</span>`;
     } else {
-        summaryMeta = `${selectedFiles.length} file${selectedFiles.length > 1 ? 's' : ''} · ${formatSize(totalBytes)}`;
+        summaryMeta = `${t('files_count', selectedFiles.length)} · ${formatSize(totalBytes)}`;
     }
     const showBar = uploadingCount > 0 || doneCount > 0;
 
-    const statusText = allDone ? 'All files uploaded'
-        : isPaused && uploadingCount > 0 ? 'Pausing... (finishing current files)'
-        : isPaused ? 'Paused'
-        : uploadingCount > 0 ? 'Uploading...'
-        : 'Ready to upload';
+    const statusText = allDone ? t('all_files_uploaded')
+        : isPaused && uploadingCount > 0 ? t('pausing')
+        : isPaused ? t('paused')
+        : uploadingCount > 0 ? t('uploading_dots')
+        : t('ready_to_upload');
 
     const summaryHtml = `
         <div class="upload-summary">
@@ -1010,17 +1006,17 @@ function renderUploadPreviewHTML() {
 
     const hasPending = selectedFiles.some(f => !f.status || f.status === 'error');
 
-    const headerTitle = allDone ? 'Upload complete'
-        : isPaused ? 'Upload paused'
-        : isUploading ? 'Uploading files'
-        : 'Files to upload';
-    const headerSubtitle = `${selectedFiles.length} file${selectedFiles.length === 1 ? '' : 's'} · ${formatSize(totalBytes)}`;
+    const headerTitle = allDone ? t('upload_complete')
+        : isPaused ? t('upload_paused')
+        : isUploading ? t('uploading_files')
+        : t('files_to_upload');
+    const headerSubtitle = `${t('files_count', selectedFiles.length)} · ${formatSize(totalBytes)}`;
     const headerIcon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
         <polyline points="17 8 12 3 7 8"/>
         <line x1="12" y1="3" x2="12" y2="15"/>
     </svg>`;
-    const headerActions = `<button class="panel-header-close" onclick="clearFiles()" title="${isUploading ? 'Cancel upload' : 'Clear all'}">
+    const headerActions = `<button class="panel-header-close" onclick="clearFiles()" title="${isUploading ? t('cancel_upload') : t('clear_all')}">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="12" cy="12" r="10"/>
             <line x1="15" y1="9" x2="9" y2="15"/>
@@ -1041,11 +1037,11 @@ function renderUploadPreviewHTML() {
         <div class="sticky-upload">
             ${isUploading ? `
                 <button class="upload-btn ${isPaused ? '' : 'ghost'}" onclick="togglePause()">
-                    ${isPaused ? 'Resume' : 'Pause'}
+                    ${isPaused ? t('resume') : t('pause')}
                 </button>
             ` : `
                 <button class="upload-btn" ${!hasPending ? 'disabled' : ''} onclick="upload()">
-                    ${allDone ? 'Done' : 'Upload'}
+                    ${allDone ? t('btn_done') : t('btn_upload')}
                 </button>
             `}
         </div>`;
@@ -1459,19 +1455,19 @@ let datasetSort = 'modified_desc';   // current sort key
 function relativeTime(ts) {
     if (!ts) return '';
     const secs = Math.floor(Date.now() / 1000 - ts);
-    if (secs < 45) return 'just now';
-    if (secs < 90) return '1 minute ago';
+    if (secs < 45) return t('just_now');
+    if (secs < 90) return t('min_1');
     const mins = Math.round(secs / 60);
-    if (mins < 45) return `${mins} minutes ago`;
-    if (mins < 90) return '1 hour ago';
+    if (mins < 45) return t('mins_ago', mins);
+    if (mins < 90) return t('hour_1');
     const hrs = Math.round(mins / 60);
-    if (hrs < 24) return `${hrs} hours ago`;
-    if (hrs < 48) return 'yesterday';
+    if (hrs < 24) return t('hours_ago', hrs);
+    if (hrs < 48) return t('yesterday');
     const days = Math.round(hrs / 24);
-    if (days < 30) return `${days} days ago`;
+    if (days < 30) return t('days_ago', days);
     const months = Math.round(days / 30);
-    if (months < 12) return `${months} months ago`;
-    return `${Math.round(months / 12)} years ago`;
+    if (months < 12) return t('months_ago', months);
+    return t('years_ago', Math.round(months / 12));
 }
 
 function sortedFilteredDatasets() {
@@ -1534,7 +1530,7 @@ async function loadDatasets() {
         if (selectedDataset) fetchDatasetDetail(selectedDataset);
     } catch (e) {
         datasetsLoading = false;
-        container.innerHTML = '<div class="empty-state">Failed to load datasets.</div>';
+        container.innerHTML = `<div class="empty-state">${t('failed_to_load')}</div>`;
     }
 }
 
@@ -1559,13 +1555,13 @@ function renderDatasets() {
     }
 
     if (datasetsCache.length === 0) {
-        container.innerHTML = '<div class="empty-state">No datasets yet. Upload some files to get started.</div>';
+        container.innerHTML = `<div class="empty-state">${t('no_datasets_yet')}</div>`;
         return;
     }
 
     const visible = sortedFilteredDatasets();
     if (visible.length === 0) {
-        container.innerHTML = `<div class="empty-state">No datasets match "${datasetSearch}"</div>`;
+        container.innerHTML = `<div class="empty-state">${t('no_datasets_match', datasetSearch)}</div>`;
         return;
     }
 
@@ -1574,7 +1570,7 @@ function renderDatasets() {
         const isSelected = selectedDataset === ds.name;
         const isEmpty = ds.file_count === 0;
         const when = relativeTime(ds.modified_at);
-        const sessionLabel = ds.session_count === 1 ? '1 session' : `${ds.session_count} sessions`;
+        const sessionLabel = t('sessions_count', ds.session_count);
 
         return `
         <div class="dataset-card ${isSelected ? 'selected' : ''} ${isEmpty ? 'empty' : ''}" onclick="selectDataset('${safe}')">
@@ -1586,27 +1582,20 @@ function renderDatasets() {
                         <span class="dataset-card-stats-pill">${formatSize(ds.total_size_bytes)}</span>
                     </div>
                     <div class="dataset-card-meta">
-                        <span>${ds.file_count} file${ds.file_count === 1 ? '' : 's'}</span>
+                        <span>${t('files_count', ds.file_count)}</span>
                         <span class="dot">·</span>
                         <span>${sessionLabel}</span>
                         ${when ? `<span class="dot">·</span><span>${when}</span>` : ''}
                     </div>
                 </div>
-                <button class="dataset-delete-btn" onclick="event.stopPropagation(); deleteDataset('${safe}', ${ds.file_count})" title="Delete dataset">${ICON_TRASH}</button>
+                <button class="dataset-delete-btn" onclick="event.stopPropagation(); deleteDataset('${safe}', ${ds.file_count})" title="${t('delete_dataset_title')}">${ICON_TRASH}</button>
             </div>
         </div>`;
     }).join('');
 }
 
-// Wire up search + custom sort dropdown (once)
-const SORT_LABELS = {
-    modified_desc: 'Newest first',
-    modified_asc: 'Oldest first',
-    name_asc: 'Name A–Z',
-    name_desc: 'Name Z–A',
-    size_desc: 'Largest first',
-    size_asc: 'Smallest first',
-};
+// Wire up search + custom sort dropdown (once). Labels are looked up by
+// `sort_<key>` so the i18n table is the single source of truth.
 
 function setupDatasetControls() {
     const search = document.getElementById('datasetSearch');
@@ -1627,7 +1616,7 @@ function setupDatasetControls() {
         menu.querySelectorAll('.sort-option').forEach((o) => {
             o.classList.toggle('selected', o.dataset.sort === datasetSort);
         });
-        if (label) label.textContent = SORT_LABELS[datasetSort] || 'Sort by';
+        if (label) label.textContent = t('sort_' + datasetSort);
     }
 
     button.addEventListener('click', (e) => {
@@ -1677,12 +1666,12 @@ function renderDetailPanel() {
         </svg>`;
         panel.innerHTML = renderPanelHeader({
             iconSvg: emptyIcon,
-            title: 'Preview',
-            subtitle: 'Upload files or select a dataset',
+            title: t('preview'),
+            subtitle: t('preview_sub'),
         }) + `
             <div class="detail-empty">
                 ${ICON_FOLDER}
-                <div>Drop files on the left<br>or select a dataset below</div>
+                <div>${t('detail_empty_text')}</div>
             </div>`;
         return;
     }
@@ -1696,10 +1685,10 @@ function renderDetailPanel() {
 
     const dsIcon = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 4H2v16h20V6H12l-2-2z"/></svg>`;
     const dsActions = `
-        <button class="panel-header-close" onclick="deleteDataset('${safe}', ${totalFiles})" title="Delete dataset" style="margin-right:0.25rem;">
+        <button class="panel-header-close" onclick="deleteDataset('${safe}', ${totalFiles})" title="${t('delete_dataset_title')}" style="margin-right:0.25rem;">
             ${ICON_TRASH}
         </button>
-        <button class="panel-header-close" onclick="selectDataset(null)" title="Close">
+        <button class="panel-header-close" onclick="selectDataset(null)" title="${t('close')}">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <circle cx="12" cy="12" r="10"/>
                 <line x1="15" y1="9" x2="9" y2="15"/>
@@ -1710,7 +1699,7 @@ function renderDetailPanel() {
     const headerHtml = renderPanelHeader({
         iconSvg: dsIcon,
         title: selectedDataset,
-        subtitle: `${totalFiles} file${totalFiles === 1 ? '' : 's'} · ${totalSize} · ${sessionCount} session${sessionCount === 1 ? '' : 's'}`,
+        subtitle: `${t('files_count', totalFiles)} · ${totalSize} · ${t('sessions_count', sessionCount)}`,
         actionsHtml: dsActions,
     });
 
@@ -1724,16 +1713,16 @@ function renderDetailPanel() {
     const mismatch = detail && cachedSessionCount === 0 && liveSessionCount > 0;
     const errMsg = detail?.error;
     if (!detail) {
-        bodyHtml = `<div class="detail-body"><div class="empty-state">Loading...</div></div>`;
+        bodyHtml = `<div class="detail-body"><div class="empty-state">${t('loading')}</div></div>`;
     } else if (cachedSessionCount === 0) {
-        const errLine = errMsg ? `<br><br><span style="color:#c52c4a;">Error: ${errMsg}</span>` : '';
+        const errLine = errMsg ? `<br><br><span style="color:#c52c4a;">${t('error_prefix', errMsg)}</span>` : '';
         bodyHtml = mismatch
             ? `<div class="detail-body"><div class="empty-state">
-                   The dataset list reports ${liveSessionCount} sessions, but the server returned none.${errLine}
+                   ${t('mismatch_msg', liveSessionCount)}${errLine}
                    <br><br>
-                   <button class="browse-btn" onclick="datasetDetails.delete('${selectedDataset.replace(/'/g, "\\'")}'); fetchDatasetDetail('${selectedDataset.replace(/'/g, "\\'")}')">Try again</button>
+                   <button class="browse-btn" onclick="datasetDetails.delete('${selectedDataset.replace(/'/g, "\\'")}'); fetchDatasetDetail('${selectedDataset.replace(/'/g, "\\'")}')">${t('try_again')}</button>
                </div></div>`
-            : `<div class="detail-body"><div class="empty-state">This dataset has no sessions.${errLine}</div></div>`;
+            : `<div class="detail-body"><div class="empty-state">${t('no_sessions')}${errLine}</div></div>`;
     } else {
         // Reset the flat lightbox list before re-rendering — renderEntry()
         // appends to it as it walks each session.
@@ -1766,12 +1755,12 @@ function renderDetailPanel() {
                 <div class="session-group-header">
                     <div class="session-group-folder">${ICON_FOLDER}</div>
                     <span class="session-group-name">${s.name}</span>
-                    <span class="session-group-stats">${s.file_count} files · ${formatSize(s.total_size_bytes)}</span>
-                    <button class="session-delete-btn" style="opacity:1;" onclick="deleteSession('${safe}', '${safeS}', ${s.file_count})" title="Delete session">${ICON_TRASH}</button>
+                    <span class="session-group-stats">${t('session_files_stats', { n: s.file_count, size: formatSize(s.total_size_bytes) })}</span>
+                    <button class="session-delete-btn" style="opacity:1;" onclick="deleteSession('${safe}', '${safeS}', ${s.file_count})" title="${t('delete_session_title')}">${ICON_TRASH}</button>
                 </div>
                 <div class="session-files">
                     ${shown.map(entry => renderEntry(entry, fileUrl, s.name)).join('')}
-                    ${displayed.length > shown.length ? `<div class="file-link" style="color:#A9ACB4;">… and ${displayed.length - shown.length} more files</div>` : ''}
+                    ${displayed.length > shown.length ? `<div class="file-link" style="color:#A9ACB4;">${t('more_files', displayed.length - shown.length)}</div>` : ''}
                 </div>
             </div>`;
         }).join('')}</div>`;
@@ -1814,7 +1803,7 @@ function selectDataset(name) {
 }
 
 async function deleteDataset(name, fileCount) {
-    if (!confirm(`Delete dataset "${name}"?\n\nThis will permanently remove ${fileCount} file${fileCount === 1 ? '' : 's'}.`)) return;
+    if (!confirm(t('confirm_delete_dataset', { name, n: fileCount }))) return;
     try {
         const resp = await fetch(`/datasets/${encodeURIComponent(name)}?confirm=true`, { method: 'DELETE' });
         if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
@@ -1822,19 +1811,19 @@ async function deleteDataset(name, fileCount) {
         if (selectedDataset === name) selectedDataset = null;
         loadDatasets();
     } catch (e) {
-        alert(`Failed to delete: ${e.message}`);
+        alert(t('failed_to_delete', e.message));
     }
 }
 
 async function deleteSession(dataset, session, fileCount) {
-    if (!confirm(`Delete session "${session}" from "${dataset}"?\n\nThis will permanently remove ${fileCount} file${fileCount === 1 ? '' : 's'}.`)) return;
+    if (!confirm(t('confirm_delete_session', { dataset, session, n: fileCount }))) return;
     try {
         const resp = await fetch(`/datasets/${encodeURIComponent(dataset)}/${encodeURIComponent(session)}?confirm=true`, { method: 'DELETE' });
         if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
         datasetDetails.delete(dataset);
         loadDatasets();
     } catch (e) {
-        alert(`Failed to delete: ${e.message}`);
+        alert(t('failed_to_delete', e.message));
     }
 }
 
@@ -1854,6 +1843,18 @@ const leftPanel = document.querySelector('.container');
 if (leftPanel && 'ResizeObserver' in window) {
     new ResizeObserver(() => syncPanelHeights()).observe(leftPanel);
 }
+
+// Re-render every JS-built string when the user switches language. i18n.js
+// has already swapped the static data-i18n nodes by the time this fires;
+// here we repaint the dynamic panels (upload preview, dataset list, detail).
+document.addEventListener('i18n:changed', () => {
+    renderFilesImmediate();   // upload preview / dropzone summary / overlay / detail
+    renderDatasets();         // dataset cards on the bottom list
+    // The sort label is overwritten by JS, so applyTranslations() can't keep
+    // it in sync with the *current* sort — reset it to the active option here.
+    const label = document.getElementById('sortLabel');
+    if (label) label.textContent = t('sort_' + datasetSort);
+});
 
 // Load on start
 renderRightPanel();   // paint the empty state immediately

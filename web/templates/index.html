@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ko">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,7 +9,11 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/css/app.css">
 </head>
-<body>
+<body data-doctitle="doc_title_index">
+    <div class="lang-switch" id="langSwitch">
+        <button type="button" data-lang="ko">한국어</button>
+        <button type="button" data-lang="en">EN</button>
+    </div>
     <div class="page">
         <div class="top-row">
             <div class="container">
@@ -23,18 +27,18 @@
                         </svg>
                     </div>
                     <div class="panel-header-text">
-                        <div class="panel-header-title">Upload files</div>
-                        <div class="panel-header-subtitle">Select and upload the files of your choice</div>
+                        <div class="panel-header-title" data-i18n="upload_files">Upload files</div>
+                        <div class="panel-header-subtitle" data-i18n="upload_files_sub">Select and upload the files of your choice</div>
                     </div>
-                    <button type="button" class="req-help-btn" onclick="openReqModal()" title="What to upload to get grasp points">
+                    <button type="button" class="req-help-btn" onclick="openReqModal()" data-i18n-title="what_to_upload_title" title="What to upload to get grasp points">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <circle cx="12" cy="12" r="10"/>
                             <line x1="12" y1="16" x2="12" y2="12"/>
                             <line x1="12" y1="8" x2="12.01" y2="8"/>
                         </svg>
-                        <span>What to upload?</span>
+                        <span data-i18n="what_to_upload_btn">What to upload?</span>
                     </button>
-                    <button class="panel-header-close" id="leftPanelClose" onclick="clearFiles()" title="Clear all">
+                    <button class="panel-header-close" id="leftPanelClose" onclick="clearFiles()" data-i18n-title="clear_all" title="Clear all">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <circle cx="12" cy="12" r="10"/>
                             <line x1="15" y1="9" x2="9" y2="15"/>
@@ -46,18 +50,18 @@
                 <!-- Dataset / Session (compact) -->
                 <div class="fields">
                     <div class="field">
-                        <label for="dataset">Dataset name (optional)</label>
-                        <input type="text" id="dataset" placeholder="auto-generated if empty">
+                        <label for="dataset" data-i18n="dataset_label">Dataset name (optional)</label>
+                        <input type="text" id="dataset" data-i18n-placeholder="auto_generated" placeholder="auto-generated if empty">
                     </div>
                     <div class="field">
-                        <label for="session">Session (optional)</label>
-                        <input type="text" id="session" placeholder="auto-generated if empty">
+                        <label for="session" data-i18n="session_label">Session (optional)</label>
+                        <input type="text" id="session" data-i18n-placeholder="auto_generated" placeholder="auto-generated if empty">
                     </div>
                 </div>
 
                 <!-- Metadata -->
                 <div class="field-full">
-                    <label for="metadata">Metadata JSON (optional)</label>
+                    <label for="metadata" data-i18n="metadata_label">Metadata JSON (optional)</label>
                     <textarea id="metadata" placeholder='{"camera":"L515","resolution":"960x540"}'></textarea>
                 </div>
 
@@ -72,15 +76,15 @@
                         </svg>
                     </div>
                     <div class="dropzone-empty">
-                        <div class="dropzone-text">Choose a file or drag &amp; drop it here</div>
-                        <div class="dropzone-hint">Any file type or folder, structure preserved on the server</div>
+                        <div class="dropzone-text" data-i18n="dropzone_text">Choose a file or drag &amp; drop it here</div>
+                        <div class="dropzone-hint" data-i18n="dropzone_hint">Any file type or folder, structure preserved on the server</div>
                     </div>
                     <div class="dropzone-summary" id="dropzoneSummary" hidden>
                         <div class="dropzone-summary-count" id="dropzoneSummaryCount">0 files</div>
                         <div class="dropzone-summary-meta" id="dropzoneSummaryMeta">0 B selected</div>
-                        <div class="dropzone-summary-hint">Drop more or click to add</div>
+                        <div class="dropzone-summary-hint" data-i18n="dropzone_summary_hint">Drop more or click to add</div>
                     </div>
-                    <button type="button" class="browse-btn" id="browseBtn">Browse File</button>
+                    <button type="button" class="browse-btn" id="browseBtn" data-i18n="browse_file">Browse File</button>
                     <input type="file" id="fileInput" multiple>
                     <input type="file" id="folderInput" webkitdirectory directory multiple>
                 </div>
@@ -93,8 +97,8 @@
         <!-- Datasets list (bottom, full width) -->
         <section class="datasets-panel">
             <div class="datasets-header">
-                <h2>Datasets on server</h2>
-                <button class="refresh-btn icon-only" onclick="spinThis(this); loadDatasets();" title="Refresh">
+                <h2 data-i18n="datasets_on_server">Datasets on server</h2>
+                <button class="refresh-btn icon-only" onclick="spinThis(this); loadDatasets();" data-i18n-title="refresh" title="Refresh">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <polyline points="23 4 23 10 17 10"/>
                         <polyline points="1 20 1 14 7 14"/>
@@ -108,24 +112,24 @@
                         <circle cx="11" cy="11" r="8"/>
                         <line x1="21" y1="21" x2="16.65" y2="16.65"/>
                     </svg>
-                    <input type="text" class="search-input" id="datasetSearch" placeholder="Search datasets...">
+                    <input type="text" class="search-input" id="datasetSearch" data-i18n-placeholder="search_datasets" placeholder="Search datasets...">
                 </div>
                 <div class="sort-wrap" id="sortWrap">
                     <button type="button" class="sort-button" id="sortButton">
-                        <span id="sortLabel">Newest first</span>
+                        <span id="sortLabel" data-i18n="sort_modified_desc">Newest first</span>
                     </button>
                     <div class="sort-menu" id="sortMenu">
-                        <div class="sort-option" data-sort="modified_desc">Newest first</div>
-                        <div class="sort-option" data-sort="modified_asc">Oldest first</div>
-                        <div class="sort-option" data-sort="name_asc">Name A–Z</div>
-                        <div class="sort-option" data-sort="name_desc">Name Z–A</div>
-                        <div class="sort-option" data-sort="size_desc">Largest first</div>
-                        <div class="sort-option" data-sort="size_asc">Smallest first</div>
+                        <div class="sort-option" data-sort="modified_desc" data-i18n="sort_modified_desc">Newest first</div>
+                        <div class="sort-option" data-sort="modified_asc" data-i18n="sort_modified_asc">Oldest first</div>
+                        <div class="sort-option" data-sort="name_asc" data-i18n="sort_name_asc">Name A–Z</div>
+                        <div class="sort-option" data-sort="name_desc" data-i18n="sort_name_desc">Name Z–A</div>
+                        <div class="sort-option" data-sort="size_desc" data-i18n="sort_size_desc">Largest first</div>
+                        <div class="sort-option" data-sort="size_asc" data-i18n="sort_size_asc">Smallest first</div>
                     </div>
                 </div>
             </div>
             <div class="datasets-grid" id="datasetsList">
-                <div class="empty-state">Loading...</div>
+                <div class="empty-state" data-i18n="loading">Loading...</div>
             </div>
         </section>
     </div><!-- /.page -->
@@ -145,44 +149,44 @@
                     </svg>
                 </div>
                 <div class="req-head-text">
-                    <div class="req-title" id="reqTitle">What to upload to get grasp points</div>
-                    <div class="req-sub">The server returns one suction pick point per bottle. It only works when you give it <strong>both</strong> images below, named as a pair.</div>
+                    <div class="req-title" id="reqTitle" data-i18n="what_to_upload_title">What to upload to get grasp points</div>
+                    <div class="req-sub" data-i18n="req_sub">The server returns one suction pick point per bottle. It only works when you give it <strong>both</strong> images below, named as a pair.</div>
                 </div>
-                <button type="button" class="req-close" onclick="closeReqModal()" aria-label="Close">&times;</button>
+                <button type="button" class="req-close" onclick="closeReqModal()" data-i18n-aria-label="close" aria-label="Close">&times;</button>
             </div>
 
             <div class="req-body">
 
                 <!-- Two required inputs -->
-                <div class="req-section-label">Per scene, upload 2 files</div>
+                <div class="req-section-label" data-i18n="req_section_per_scene">Per scene, upload 2 files</div>
                 <div class="req-inputs">
                     <div class="req-input-card">
                         <div class="req-input-top">
                             <span class="req-num">1</span>
-                            <span class="req-input-name">Color photo (RGB)</span>
-                            <span class="req-tag req-tag--req">Required</span>
+                            <span class="req-input-name" data-i18n="req_rgb_name">Color photo (RGB)</span>
+                            <span class="req-tag req-tag--req" data-i18n="req_tag_required">Required</span>
                         </div>
                         <div class="req-chips">
                             <span class="req-chip">.png / .jpg</span>
-                            <span class="req-chip">8 bit</span>
-                            <span class="req-chip">3 channels</span>
+                            <span class="req-chip" data-i18n="req_chip_8bit">8 bit</span>
+                            <span class="req-chip" data-i18n="req_chip_3ch">3 channels</span>
                         </div>
-                        <div class="req-input-desc">A normal top down color picture of the bin. This is what the model sees to find each bottle.</div>
+                        <div class="req-input-desc" data-i18n="req_rgb_desc">A normal top down color picture of the bin. This is what the model sees to find each bottle.</div>
                     </div>
 
                     <div class="req-input-card req-input-card--depth">
                         <div class="req-input-top">
                             <span class="req-num req-num--depth">2</span>
-                            <span class="req-input-name">Depth map</span>
-                            <span class="req-tag req-tag--key">Unlocks pick point</span>
+                            <span class="req-input-name" data-i18n="req_depth_name">Depth map</span>
+                            <span class="req-tag req-tag--key" data-i18n="req_tag_key">Unlocks pick point</span>
                         </div>
                         <div class="req-chips">
                             <span class="req-chip req-chip--depth">.png</span>
-                            <span class="req-chip req-chip--depth">16 bit</span>
-                            <span class="req-chip req-chip--depth">1 channel</span>
-                            <span class="req-chip req-chip--depth">millimeters</span>
+                            <span class="req-chip req-chip--depth" data-i18n="req_chip_16bit">16 bit</span>
+                            <span class="req-chip req-chip--depth" data-i18n="req_chip_1ch">1 channel</span>
+                            <span class="req-chip req-chip--depth" data-i18n="req_chip_mm">millimeters</span>
                         </div>
-                        <div class="req-input-desc">Distance to every pixel, saved straight from the L515 depth stream. Working range about 250 to 1500&nbsp;mm.</div>
+                        <div class="req-input-desc" data-i18n="req_depth_desc">Distance to every pixel, saved straight from the L515 depth stream. Working range about 250 to 1500&nbsp;mm.</div>
                     </div>
                 </div>
 
@@ -193,16 +197,16 @@
                         <line x1="12" y1="9" x2="12" y2="13"/>
                         <line x1="12" y1="17" x2="12.01" y2="17"/>
                     </svg>
-                    <div><strong>No depth means no pick point.</strong> An RGB only upload still works, but you get bottle outlines only and the central grasp dot is skipped.</div>
+                    <div data-i18n="req_callout"><strong>No depth means no pick point.</strong> An RGB only upload still works, but you get bottle outlines only and the central grasp dot is skipped.</div>
                 </div>
 
                 <!-- Pairing rule -->
-                <div class="req-section-label">Name the pair the same</div>
-                <div class="req-pair-help">The server matches RGB to depth by <strong>filename</strong>, not by folder. Give a photo and its depth the same base name.</div>
+                <div class="req-section-label" data-i18n="req_section_pair_name">Name the pair the same</div>
+                <div class="req-pair-help" data-i18n="req_pair_help">The server matches RGB to depth by <strong>filename</strong>, not by folder. Give a photo and its depth the same base name.</div>
                 <div class="req-pair-grid">
                     <div class="req-pair-col">
-                        <div class="req-pair-tag">Option A: split folders</div>
-<pre class="req-tree">my_capture/
+                        <div class="req-pair-tag" data-i18n="req_pair_tag_a">Option A: split folders</div>
+<pre class="req-tree" data-i18n="req_tree_a">my_capture/
 ├─ RGB/
 │   ├─ 000000.png
 │   └─ 000001.png
@@ -211,8 +215,8 @@
     └─ 000001.png</pre>
                     </div>
                     <div class="req-pair-col">
-                        <div class="req-pair-tag">Option B: one folder, suffix</div>
-<pre class="req-tree">my_capture/
+                        <div class="req-pair-tag" data-i18n="req_pair_tag_b">Option B: one folder, suffix</div>
+<pre class="req-tree" data-i18n="req_tree_b">my_capture/
 ├─ IMG_001.png        (rgb)
 ├─ IMG_001_depth.png  (depth)
 ├─ IMG_002.png
@@ -221,52 +225,52 @@
                 </div>
 
                 <!-- Spec table -->
-                <div class="req-section-label">Exact data types</div>
+                <div class="req-section-label" data-i18n="req_section_exact_types">Exact data types</div>
                 <table class="req-table">
                     <thead>
-                        <tr><th>File</th><th>Format</th><th>Bit depth</th><th>Channels</th><th>Pixel value means</th></tr>
+                        <tr><th data-i18n="th_file">File</th><th data-i18n="th_format">Format</th><th data-i18n="th_bitdepth">Bit depth</th><th data-i18n="th_channels">Channels</th><th data-i18n="th_pixel_means">Pixel value means</th></tr>
                     </thead>
                     <tbody>
                         <tr>
                             <td><span class="req-dot req-dot--rgb"></span>RGB</td>
                             <td>PNG / JPG</td>
-                            <td>8 bit</td>
-                            <td>3 (R,G,B)</td>
-                            <td>Color</td>
+                            <td data-i18n="td_8bit">8 bit</td>
+                            <td data-i18n="td_rgb_ch">3 (R,G,B)</td>
+                            <td data-i18n="td_color">Color</td>
                         </tr>
                         <tr>
-                            <td><span class="req-dot req-dot--depth"></span>Depth</td>
+                            <td><span class="req-dot req-dot--depth"></span><span data-i18n="td_depth">Depth</span></td>
                             <td>PNG</td>
-                            <td>16 bit</td>
-                            <td>1 (grayscale)</td>
-                            <td>Distance in mm</td>
+                            <td data-i18n="td_16bit">16 bit</td>
+                            <td data-i18n="td_depth_ch">1 (grayscale)</td>
+                            <td data-i18n="td_distance_mm">Distance in mm</td>
                         </tr>
                     </tbody>
                 </table>
-                <div class="req-note">The server reads the actual image content, not the filename. A depth map saved as 8 bit or 3 channel will be treated as a normal photo and ignored for picking. Camera intrinsics default to the L515. Add notes in the optional Metadata JSON box if needed.</div>
+                <div class="req-note" data-i18n="req_note">The server reads the actual image content, not the filename. A depth map saved as 8 bit or 3 channel will be treated as a normal photo and ignored for picking. Camera intrinsics default to the L515. Add notes in the optional Metadata JSON box if needed.</div>
 
                 <!-- What you get back -->
-                <div class="req-section-label">What comes back</div>
+                <div class="req-section-label" data-i18n="req_section_comes_back">What comes back</div>
                 <div class="req-result">
-                    <div class="req-result-text">An <strong>overlay PNG</strong> per scene: each bottle outlined, with one colored dot at its suction pick point.</div>
+                    <div class="req-result-text" data-i18n="req_result_text">An <strong>overlay PNG</strong> per scene: each bottle outlined, with one colored dot at its suction pick point.</div>
                     <div class="req-legend">
-                        <span class="req-legend-item"><span class="req-dot req-dot--green"></span>Good grip</span>
-                        <span class="req-legend-item"><span class="req-dot req-dot--amber"></span>OK grip</span>
-                        <span class="req-legend-item"><span class="req-dot req-dot--red"></span>Weak grip</span>
+                        <span class="req-legend-item"><span class="req-dot req-dot--green"></span><span data-i18n="legend_good">Good grip</span></span>
+                        <span class="req-legend-item"><span class="req-dot req-dot--amber"></span><span data-i18n="legend_ok">OK grip</span></span>
+                        <span class="req-legend-item"><span class="req-dot req-dot--red"></span><span data-i18n="legend_weak">Weak grip</span></span>
                     </div>
                 </div>
 
             </div>
 
             <div class="req-foot">
-                <button type="button" class="req-foot-btn" onclick="closeReqModal()">Got it</button>
+                <button type="button" class="req-foot-btn" onclick="closeReqModal()" data-i18n="got_it">Got it</button>
             </div>
         </div>
     </div>
 
     <div id="uploadOverlay" class="upload-overlay" hidden>
         <div class="upload-overlay-card">
-            <div class="upload-overlay-title" id="uploadOverlayTitle">Uploading files</div>
+            <div class="upload-overlay-title" id="uploadOverlayTitle" data-i18n="uploading_files">Uploading files</div>
             <div class="upload-overlay-target" id="uploadOverlayTarget"></div>
             <div class="upload-overlay-loader-wrap">
                 <span class="loader"></span>
@@ -282,17 +286,17 @@
             <div class="upload-overlay-meta" id="uploadOverlayMeta">0 B uploaded</div>
             <div class="upload-overlay-actions">
                 <button type="button" class="upload-overlay-btn upload-overlay-btn--secondary"
-                        id="uploadOverlayPauseBtn" onclick="togglePause()">Pause</button>
+                        id="uploadOverlayPauseBtn" onclick="togglePause()" data-i18n="pause">Pause</button>
                 <button type="button" class="upload-overlay-btn upload-overlay-btn--danger"
-                        onclick="clearFiles()">Cancel upload</button>
+                        onclick="clearFiles()" data-i18n="cancel_upload">Cancel upload</button>
             </div>
         </div>
     </div>
 
     <div id="lightbox" class="lightbox" hidden>
-        <button class="lightbox-close" onclick="closeLightbox()" aria-label="Close">&times;</button>
-        <button class="lightbox-nav lightbox-nav--prev" onclick="navLightbox(-1, event)" aria-label="Previous">&#x2039;</button>
-        <button class="lightbox-nav lightbox-nav--next" onclick="navLightbox(1, event)" aria-label="Next">&#x203A;</button>
+        <button class="lightbox-close" onclick="closeLightbox()" data-i18n-aria-label="close" aria-label="Close">&times;</button>
+        <button class="lightbox-nav lightbox-nav--prev" onclick="navLightbox(-1, event)" data-i18n-aria-label="previous" aria-label="Previous">&#x2039;</button>
+        <button class="lightbox-nav lightbox-nav--next" onclick="navLightbox(1, event)" data-i18n-aria-label="next" aria-label="Next">&#x203A;</button>
         <div class="lightbox-caption" id="lightboxCaption"></div>
         <div class="lightbox-stage" onclick="event.stopPropagation()">
             <img class="lightbox-img" id="lightboxImg" alt="">
@@ -301,6 +305,7 @@
         <div class="lightbox-counter" id="lightboxCounter"></div>
     </div>
 
+    <script src="/static/js/i18n.js"></script>
     <script src="/static/js/app.js"></script>
 </body>
 </html>
