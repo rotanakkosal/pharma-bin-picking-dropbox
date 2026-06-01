@@ -252,7 +252,9 @@ def _is_authed(request: Request) -> bool:
 async def login_page(error: int = 0):
     """Serve the login form. ?error=1 highlights bad credentials."""
     html = (TEMPLATES_DIR / "login.html").read_text()
-    html = html.replace("<!--ERROR-->", '<div class="login-error">Invalid username or password.</div>' if error else "")
+    # The text is localized client-side by i18n.js via the data-i18n hook;
+    # the English string here is just the no-JS fallback.
+    html = html.replace("<!--ERROR-->", '<div class="login-error" data-i18n="login_error">Invalid username or password.</div>' if error else "")
     return HTMLResponse(
         content=html,
         headers={
@@ -497,22 +499,41 @@ async def _do_upload(
             out.write(content)
         saved_paths.append(file_path)
 
-    # Phase 2: classify saved images by file content (not by name) and
-    # pair each RGB with its closest depth file. Anything classified
-    # "other" (8-bit grayscale, palette, etc.) is left out of inference.
-    classifications = {p: _classify_image(p) for p in saved_paths}
-    rgb_paths = [p for p, kind in classifications.items() if kind == "rgb"]
-    depth_paths = [p for p, kind in classifications.items() if kind == "depth"]
-    pairs = _pair_rgb_depth(rgb_paths, depth_paths)
-    rgb_to_depth = {rgb: depth for rgb, depth in pairs}
+    # Phase 2: pair RGB and depth across the WHOLE session, not just this
+    # request's files. The browser splits folder uploads into one POST per
+    # subfolder, so RGB/ and Depth/ land in separate parallel requests; the
+    # depth arrives without an RGB to pair with (and vice versa) unless we
+    # scan siblings already on disk. Excludes thumbnails (.thumbs/) and the
+    # overlay outputs (_overlay.png) — _classify_image filters the latter.
+    session_files = [
+        f for f in dest.rglob("*")
+        if f.is_file() and THUMB_DIR_NAME not in f.parts
+    ]
+    session_classifications = {p: _classify_image(p) for p in session_files}
+    session_rgb = [p for p, k in session_classifications.items() if k == "rgb"]
+    session_depth = [p for p, k in session_classifications.items() if k == "depth"]
+    all_pairs = _pair_rgb_depth(session_rgb, session_depth)
+    rgb_to_depth = {rgb: depth for rgb, depth in all_pairs}
 
-    # Phase 3: run inference per RGB (with depth if matched). Best-effort —
-    # failures don't break the upload.
+    # Phase 3: run inference only for pairs touched by this request — either
+    # the RGB or its paired depth was just saved. Re-running on an unchanged
+    # pair wastes a GPU call; running when depth arrives late upgrades the
+    # earlier dummy-depth overlay to a real-depth one (which also unlocks
+    # the picker — the inference server skips grasp dots without real depth).
+    saved_set = set(saved_paths)
+    pairs_to_infer = [
+        (rgb, depth) for rgb, depth in all_pairs
+        if rgb in saved_set or (depth is not None and depth in saved_set)
+    ]
     overlays: dict[Path, Path] = {}
-    for rgb, depth in pairs:
+    for rgb, depth in pairs_to_infer:
         overlay_path = await _run_inference(rgb, depth)
         if overlay_path is not None:
             overlays[rgb] = overlay_path
+
+    # Per-saved-file classification for the response (uses session pass since
+    # it already classified every saved file).
+    classifications = {p: session_classifications.get(p, "other") for p in saved_paths}
 
     # Build the response entries from saved_paths in the original upload order.
     # ``kind`` is exposed so the upload preview UI can render depth files

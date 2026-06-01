@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ko">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -97,7 +97,11 @@
         }
     </style>
 </head>
-<body>
+<body data-doctitle="doc_title_login">
+    <div class="lang-switch" id="langSwitch">
+        <button type="button" data-lang="ko">한국어</button>
+        <button type="button" data-lang="en">EN</button>
+    </div>
     <div class="login-card">
         <div class="login-header">
             <div class="login-icon">
@@ -107,8 +111,8 @@
                 </svg>
             </div>
             <div>
-                <div class="login-title">Sign in</div>
-                <div class="login-subtitle">Pharma Bin Picking — Data Upload</div>
+                <div class="login-title" data-i18n="login_signin">Sign in</div>
+                <div class="login-subtitle" data-i18n="login_subtitle">Pharma Bin Picking — Data Upload</div>
             </div>
         </div>
 
@@ -116,17 +120,18 @@
 
         <form class="login-form" method="post" action="/login" autocomplete="on">
             <div>
-                <label for="username">Username</label>
+                <label for="username" data-i18n="login_username">Username</label>
                 <input type="text" id="username" name="username" autocomplete="username" autofocus required>
             </div>
             <div>
-                <label for="password">Password</label>
+                <label for="password" data-i18n="login_password">Password</label>
                 <input type="password" id="password" name="password" autocomplete="current-password" required>
             </div>
-            <button type="submit" class="login-submit">Sign in</button>
+            <button type="submit" class="login-submit" data-i18n="login_signin">Sign in</button>
         </form>
 
-        <div class="login-footer">Authorized personnel only.</div>
+        <div class="login-footer" data-i18n="login_footer">Authorized personnel only.</div>
     </div>
+    <script src="/static/js/i18n.js"></script>
 </body>
 </html>
