@@ -1,17 +1,3 @@
-"""
-UOAIS Data Upload API
-=====================
-A flexible file storage API for the capture team to upload
-datasets and camera captures to the GPU server.
-
-Run:
-    cd uoais_endpoint
-    .venv/bin/uvicorn main:app --host 0.0.0.0 --port 8000
-
-Docs:
-    http://<server-ip>:8000/docs
-"""
-
 import asyncio
 import io
 import json
@@ -44,6 +30,7 @@ INFERENCE_URL = os.environ.get("INFERENCE_URL", "http://127.0.0.1:8100").rstrip(
 INFERENCE_TIMEOUT = float(os.environ.get("INFERENCE_TIMEOUT", "30"))
 IMAGE_EXTS = {".png", ".jpg", ".jpeg", ".tif", ".tiff"}
 OVERLAY_SUFFIX = "_overlay.png"
+GRASP_JSON_SUFFIX = "_grasp.json"
 
 # Fake auth gate — single hardcoded credential pair. Override via env vars.
 # Not real security: cookie just has to match a per-process secret. Anyone
@@ -202,17 +189,21 @@ def _pair_rgb_depth(
 
 async def _run_inference(
     rgb_path: Path, depth_path: Optional[Path] = None
-) -> Optional[Path]:
-    """POST RGB (and optional depth) to the inference service; save overlay.
+) -> Optional[dict]:
+    """POST RGB (and optional depth) to the inference service.
 
-    Returns the absolute overlay path on success, None on any failure.
-    Inference is best-effort — failures must never break an upload. The
-    inference server falls back to a dummy depth plane if depth is missing
-    or undecodable, so we just forward whatever we have.
+    Makes two calls against the shared inference core:
+      * ``/grasp``      → PNG overlay, saved as ``<stem>_overlay.png``.
+      * ``/grasp_json`` → structured grasp JSON, saved as ``<stem>_grasp.json``.
+
+    Returns ``{"overlay": Path|None, "grasp_json": Path|None}`` on success, or
+    None if even the overlay call failed. Inference is best-effort — failures
+    must never break an upload. The grasp JSON is a bonus: if only that call
+    fails, the overlay is still returned. The inference server falls back to a
+    dummy depth plane when depth is missing (no grasp points in that case).
     """
     if _http_client is None:
         return None
-    overlay_path = rgb_path.parent / (rgb_path.stem + OVERLAY_SUFFIX)
     files = {
         "file": (rgb_path.name, rgb_path.read_bytes(), "application/octet-stream"),
     }
@@ -220,12 +211,15 @@ async def _run_inference(
         files["depth"] = (
             depth_path.name, depth_path.read_bytes(), "application/octet-stream",
         )
+
+    # 1) PNG overlay — the primary artifact (browser preview).
+    overlay_path = rgb_path.parent / (rgb_path.stem + OVERLAY_SUFFIX)
     try:
-        resp = await _http_client.post(f"{INFERENCE_URL}/infer", files=files)
+        resp = await _http_client.post(f"{INFERENCE_URL}/grasp", files=files)
         resp.raise_for_status()
     except (httpx.HTTPError, httpx.TimeoutException) as exc:
         log.warning(
-            "inference failed for %s (depth=%s): %s",
+            "inference (overlay) failed for %s (depth=%s): %s",
             rgb_path.name, depth_path.name if depth_path else None, exc,
         )
         return None
@@ -236,7 +230,19 @@ async def _run_inference(
         depth_path.name if depth_path else None,
         resp.headers.get("X-Depth-Source", "?"),
     )
-    return overlay_path
+
+    # 2) Grasp JSON — bonus artifact; its failure doesn't sink the overlay.
+    grasp_json_path: Optional[Path] = None
+    try:
+        jresp = await _http_client.post(f"{INFERENCE_URL}/grasp_json", files=files)
+        jresp.raise_for_status()
+        grasp_json_path = rgb_path.parent / (rgb_path.stem + GRASP_JSON_SUFFIX)
+        grasp_json_path.write_bytes(jresp.content)
+    except (httpx.HTTPError, httpx.TimeoutException) as exc:
+        log.warning("inference (grasp_json) failed for %s: %s", rgb_path.name, exc)
+        grasp_json_path = None
+
+    return {"overlay": overlay_path, "grasp_json": grasp_json_path}
 
 
 # ---------------------------------------------------------------------------
@@ -526,10 +532,14 @@ async def _do_upload(
         if rgb in saved_set or (depth is not None and depth in saved_set)
     ]
     overlays: dict[Path, Path] = {}
+    grasp_jsons: dict[Path, Path] = {}
     for rgb, depth in pairs_to_infer:
-        overlay_path = await _run_inference(rgb, depth)
-        if overlay_path is not None:
-            overlays[rgb] = overlay_path
+        res = await _run_inference(rgb, depth)
+        if res is not None:
+            if res.get("overlay") is not None:
+                overlays[rgb] = res["overlay"]
+            if res.get("grasp_json") is not None:
+                grasp_jsons[rgb] = res["grasp_json"]
 
     # Per-saved-file classification for the response (uses session pass since
     # it already classified every saved file).
@@ -549,6 +559,8 @@ async def _do_upload(
         }
         if fp in overlays:
             entry["overlay"] = str(overlays[fp].relative_to(dest))
+        if fp in grasp_jsons:
+            entry["grasp_json"] = str(grasp_jsons[fp].relative_to(dest))
         depth_match = rgb_to_depth.get(fp)
         if depth_match is not None:
             entry["depth"] = str(depth_match.relative_to(dest))
