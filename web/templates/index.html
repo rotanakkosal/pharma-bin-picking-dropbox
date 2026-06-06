@@ -293,6 +293,31 @@
         </div>
     </div>
 
+    <div id="graspModal" class="req-modal" hidden onclick="if(event.target===this)closeGraspModal()">
+        <div class="req-card grasp-card" role="dialog" aria-modal="true" aria-labelledby="graspTitle">
+            <div class="req-head">
+                <div class="req-head-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="9"/>
+                        <circle cx="12" cy="12" r="3.5"/>
+                    </svg>
+                </div>
+                <div class="req-head-text">
+                    <div class="req-title" id="graspTitle">Grasp points</div>
+                    <div class="req-sub" id="graspSub">&nbsp;</div>
+                </div>
+                <button type="button" class="req-close" onclick="closeGraspModal()" aria-label="Close">&times;</button>
+            </div>
+            <div class="grasp-body">
+                <pre class="grasp-json" id="graspJsonPre"></pre>
+            </div>
+            <div class="grasp-foot">
+                <button type="button" class="grasp-btn grasp-btn--ghost" id="graspCopyBtn" onclick="copyGraspJson()">Copy</button>
+                <a class="grasp-btn grasp-btn--primary" id="graspDownloadBtn" href="#" download>Download JSON</a>
+            </div>
+        </div>
+    </div>
+
     <div id="lightbox" class="lightbox" hidden>
         <button class="lightbox-close" onclick="closeLightbox()" data-i18n-aria-label="close" aria-label="Close">&times;</button>
         <button class="lightbox-nav lightbox-nav--prev" onclick="navLightbox(-1, event)" data-i18n-aria-label="previous" aria-label="Previous">&#x2039;</button>

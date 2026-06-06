@@ -351,10 +351,14 @@ function renderEntry(entry, fileUrl, sessionName) {
                         <span class="image-card-empty-text">${t('no_mask')}</span>
                     </div>`}
             </div>
-            <div class="image-card-name" title="${escName}">${entry.path}</div>
-            ${entry.graspJson ? `
-                <a class="grasp-json-link" href="${fileUrl(entry.graspJson)}" target="_blank" download
-                   title="Download grasp points (JSON)">⬇ grasp.json</a>` : ''}
+            <div class="image-card-footer">
+                <div class="image-card-name" title="${escName}">${entry.path}</div>
+                ${entry.graspJson ? `
+                    <button type="button" class="grasp-json-link"
+                            data-url="${fileUrl(entry.graspJson)}" data-name="${escName}"
+                            onclick="openGraspModal(this.dataset.url, this.dataset.name)"
+                            title="View grasp points (JSON)">${ICON_DOWNLOAD}<span>Grasp JSON</span></button>` : ''}
+            </div>
         </div>`;
 }
 
@@ -506,6 +510,66 @@ document.addEventListener('click', (e) => {
     if (box && !box.hidden && e.target === box) closeReqModal();
 });
 
+// --- Grasp JSON viewer modal -------------------------------------------------
+// Fetches the per-scene grasp JSON, pretty-prints it, and offers copy/download.
+let _graspJsonText = '';
+
+async function openGraspModal(url, name) {
+    const box = document.getElementById('graspModal');
+    if (!box) return;
+    const pre = document.getElementById('graspJsonPre');
+    const sub = document.getElementById('graspSub');
+    const dl = document.getElementById('graspDownloadBtn');
+    document.getElementById('graspTitle').textContent = name || 'Grasp points';
+    dl.href = url;
+    dl.setAttribute('download', ((name || 'scene').replace(/\.[^.]+$/, '')) + '_grasp.json');
+    pre.textContent = 'Loading…';
+    sub.innerHTML = '&nbsp;';
+    _graspJsonText = '';
+    box.hidden = false;
+    document.body.style.overflow = 'hidden';
+    try {
+        const resp = await fetch(url);
+        if (!resp.ok) throw new Error('HTTP ' + resp.status);
+        const data = await resp.json();
+        _graspJsonText = JSON.stringify(data, null, 2);
+        pre.textContent = _graspJsonText;
+        const objs = data.objects || [];
+        const pickable = objs.filter(o => o && o.pickable).length;
+        const best = data.best_pick
+            ? `best #${data.best_pick.id} (${Number(data.best_pick.score ?? 0).toFixed(2)})`
+            : 'no pickable point';
+        sub.textContent = `${objs.length} objects · ${pickable} pickable · ${best}`;
+    } catch (err) {
+        pre.textContent = 'Failed to load grasp JSON: ' + err.message;
+    }
+}
+
+function closeGraspModal() {
+    const box = document.getElementById('graspModal');
+    if (!box) return;
+    box.hidden = true;
+    document.body.style.overflow = '';
+}
+
+async function copyGraspJson() {
+    if (!_graspJsonText) return;
+    const btn = document.getElementById('graspCopyBtn');
+    try {
+        await navigator.clipboard.writeText(_graspJsonText);
+        if (btn) {
+            const orig = btn.textContent;
+            btn.textContent = 'Copied';
+            setTimeout(() => { btn.textContent = orig; }, 1200);
+        }
+    } catch (_e) { /* clipboard blocked — ignore */ }
+}
+
+document.addEventListener('keydown', (e) => {
+    const box = document.getElementById('graspModal');
+    if (box && !box.hidden && e.key === 'Escape') closeGraspModal();
+});
+
 // Trigger a one-shot CSS spin animation on an element
 function spinThis(el) {
     if (!el) return;
@@ -564,6 +628,11 @@ const ICON_TRASH = `<svg viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.or
     <path d="M19.0125 28.4375H10.9875C6.625 28.4375 6.45 26.025 6.3125 24.075L5.5 11.4875C5.4625 10.975 5.8625 10.525 6.375 10.4875C6.9 10.4625 7.3375 10.85 7.375 11.3625L8.1875 23.95C8.325 25.85 8.375 26.5625 10.9875 26.5625H19.0125C21.6375 26.5625 21.6875 25.85 21.8125 23.95L22.625 11.3625C22.6625 10.85 23.1125 10.4625 23.625 10.4875C24.1375 10.525 24.5375 10.9625 24.5 11.4875L23.6875 24.075C23.55 26.025 23.375 28.4375 19.0125 28.4375Z" fill="currentColor"/>
     <path d="M17.075 21.5625H12.9125C12.4 21.5625 11.975 21.1375 11.975 20.625C11.975 20.1125 12.4 19.6875 12.9125 19.6875H17.075C17.5875 19.6875 18.0125 20.1125 18.0125 20.625C18.0125 21.1375 17.5875 21.5625 17.075 21.5625Z" fill="currentColor"/>
     <path d="M18.125 16.5625H11.875C11.3625 16.5625 10.9375 16.1375 10.9375 15.625C10.9375 15.1125 11.3625 14.6875 11.875 14.6875H18.125C18.6375 14.6875 19.0625 15.1125 19.0625 15.625C19.0625 16.1375 18.6375 16.5625 18.125 16.5625Z" fill="currentColor"/>
+</svg>`;
+const ICON_DOWNLOAD = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <path d="M12 3v12"/>
+    <path d="m7 11 5 5 5-5"/>
+    <path d="M5 21h14"/>
 </svg>`;
 const ICON_CHECK = `<svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
     <circle cx="12" cy="12" r="10" fill="#16a34a" stroke="#16a34a"/>
@@ -744,8 +813,10 @@ function renderFileRow(node, depth) {
                             <span class="upload-preview-empty">${t('no_mask')}</span>
                         </div>`}
                 </div>${r.graspJsonUrl ? `
-                <a class="grasp-json-link" href="${r.graspJsonUrl}" target="_blank" download
-                   title="Download grasp points (JSON)">⬇ grasp.json</a>` : ''}`;
+                <button type="button" class="grasp-json-link"
+                        data-url="${r.graspJsonUrl}" data-name="${(r.label || '').replace(/"/g, '&quot;')}"
+                        onclick="openGraspModal(this.dataset.url, this.dataset.name)"
+                        title="View grasp points (JSON)">${ICON_DOWNLOAD}<span>Grasp JSON</span></button>` : ''}`;
         }
     }
 

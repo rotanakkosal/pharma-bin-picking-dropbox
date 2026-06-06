@@ -2606,17 +2606,109 @@ body {
     color: #ffffff;
 }
 
-/* Download link for the per-scene grasp JSON (saved by the inference server). */
+/* Download button for the per-scene grasp JSON (saved by the inference server).
+ * Styled to match shadcn/ui's Button — "outline" variant, "sm" size — using
+ * the canonical light-theme tokens (neutral/zinc). Source: shadcn-ui/ui
+ * registry/new-york-v4 button.tsx + app/globals.css. */
 .grasp-json-link {
-    display: inline-block;
-    margin-top: 6px;
-    font-size: 12px;
-    font-weight: 600;
-    color: #2563eb;
+    align-self: flex-end;          /* sit to the right in flex columns (upload panel) */
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;                      /* gap-1.5 */
+    height: 32px;                  /* h-8 */
+    padding: 0 10px;               /* sm + svg => px-2.5 */
+    margin-top: 8px;
+    font-size: 14px;               /* text-sm */
+    font-weight: 500;              /* font-medium */
+    line-height: 1;
+    white-space: nowrap;
+    color: oklch(0% 0 0);                       /* --foreground */
+    background: oklch(1 0 0);                   /* --background */
+    border: 1px solid oklch(0.922 0 0);         /* --border */
+    border-radius: 8px;                         /* rounded-md (--radius-md) */
+    box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);  /* shadow-xs */
     text-decoration: none;
-    background: #eef2ff;
-    border: 1px solid #c7d2fe;
-    border-radius: 6px;
-    padding: 2px 8px;
+    cursor: pointer;
+    transition: background-color 0.15s, color 0.15s, border-color 0.15s, box-shadow 0.15s;
 }
-.grasp-json-link:hover { background: #e0e7ff; text-decoration: none; }
+.grasp-json-link svg { width: 16px; height: 16px; flex: 0 0 auto; }  /* size-4 */
+.grasp-json-link:hover {
+    background: oklch(0.97 0 0);    /* --accent */
+    color: oklch(0.205 0 0);        /* --accent-foreground */
+    text-decoration: none;
+}
+.grasp-json-link:focus-visible {
+    outline: none;
+    border-color: oklch(0.708 0 0);                  /* --ring */
+    box-shadow: 0 0 0 3px oklch(0.708 0 0 / 0.5);    /* focus-visible:ring-[3px] ring/50 */
+}
+.grasp-json-link:active { background: oklch(0.95 0 0); }
+
+/* Card footer: filename on the left, the Grasp JSON button on the right. */
+.image-card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+.image-card-footer .image-card-name { margin: 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.image-card-footer .grasp-json-link { align-self: center; margin-top: 0; }
+
+/* Grasp JSON viewer modal (reuses .req-modal / .req-card shell). */
+.grasp-card { width: min(640px, 100%); }
+.grasp-body {
+    padding: 14px 16px;
+    overflow: auto;
+    background: oklch(0.97 0 0);          /* --muted/--accent */
+    border-bottom: 1px solid #eef0f4;
+}
+.grasp-json {
+    margin: 0;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+    font-size: 12.5px;
+    line-height: 1.55;
+    color: oklch(0.205 0 0);
+    white-space: pre;
+    tab-size: 2;
+}
+.grasp-foot {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    padding: 12px 16px;
+}
+/* shadcn buttons: ghost(outline) + primary(default). */
+.grasp-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    height: 36px;
+    padding: 0 14px;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 1;
+    border-radius: 8px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background-color 0.15s, color 0.15s, border-color 0.15s, box-shadow 0.15s;
+}
+.grasp-btn--ghost {
+    color: oklch(0% 0 0);
+    background: oklch(1 0 0);
+    border-color: oklch(0.922 0 0);
+    box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+}
+.grasp-btn--ghost:hover { background: oklch(0.97 0 0); }
+.grasp-btn--primary {
+    color: oklch(0.985 0 0);
+    background: oklch(0.205 0 0);          /* --primary */
+}
+.grasp-btn--primary:hover { background: oklch(0.30 0 0); }
+.grasp-btn:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px oklch(0.708 0 0 / 0.5);
+}
