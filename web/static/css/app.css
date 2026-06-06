@@ -2605,3 +2605,18 @@ body {
     background: #292D32;
     color: #ffffff;
 }
+
+/* Download link for the per-scene grasp JSON (saved by the inference server). */
+.grasp-json-link {
+    display: inline-block;
+    margin-top: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #2563eb;
+    text-decoration: none;
+    background: #eef2ff;
+    border: 1px solid #c7d2fe;
+    border-radius: 6px;
+    padding: 2px 8px;
+}
+.grasp-json-link:hover { background: #e0e7ff; text-decoration: none; }

@@ -221,11 +221,13 @@ function formatSize(bytes) {
 function pairOverlays(files, depthPairs) {
     depthPairs = depthPairs || {};
     const overlayByStem = new Map();
+    const graspByStem = new Map();
     const sources = [];
     for (const f of files) {
         if (/_overlay\.png$/i.test(f)) {
-            const stem = f.replace(/_overlay\.png$/i, '');
-            overlayByStem.set(stem, f);
+            overlayByStem.set(f.replace(/_overlay\.png$/i, ''), f);
+        } else if (/_grasp\.json$/i.test(f)) {
+            graspByStem.set(f.replace(/_grasp\.json$/i, ''), f);
         } else {
             sources.push(f);
         }
@@ -237,7 +239,12 @@ function pairOverlays(files, depthPairs) {
         const stem = path.replace(/\.[^./]+$/, '');
         const overlay = overlayByStem.get(stem);
         if (overlay) overlayByStem.delete(stem);
-        return overlay ? { path, overlay } : { path };
+        const graspJson = graspByStem.get(stem);
+        if (graspJson) graspByStem.delete(stem);
+        const entry = { path };
+        if (overlay) entry.overlay = overlay;
+        if (graspJson) entry.graspJson = graspJson;
+        return entry;
     });
     // Any overlays that didn't match a source (shouldn't happen, but be safe)
     for (const orphan of overlayByStem.values()) {
@@ -345,6 +352,9 @@ function renderEntry(entry, fileUrl, sessionName) {
                     </div>`}
             </div>
             <div class="image-card-name" title="${escName}">${entry.path}</div>
+            ${entry.graspJson ? `
+                <a class="grasp-json-link" href="${fileUrl(entry.graspJson)}" target="_blank" download
+                   title="Download grasp points (JSON)">⬇ grasp.json</a>` : ''}
         </div>`;
 }
 
@@ -733,7 +743,9 @@ function renderFileRow(node, depth) {
                         <div class="upload-preview-thumb upload-preview-thumb--empty" title="${t('no_mask_available')}">
                             <span class="upload-preview-empty">${t('no_mask')}</span>
                         </div>`}
-                </div>`;
+                </div>${r.graspJsonUrl ? `
+                <a class="grasp-json-link" href="${r.graspJsonUrl}" target="_blank" download
+                   title="Download grasp points (JSON)">⬇ grasp.json</a>` : ''}`;
         }
     }
 
@@ -1302,6 +1314,7 @@ function uploadGroup(group, uploadUrl, session, metadata, dataset, batchId) {
                             overlayThumb: u.overlay ? thumbUrl(resp.dataset, resp.session, u.overlay) : null,
                             sourcePreview: thumbUrl(resp.dataset, resp.session, u.filename, LIGHTBOX_MAX_EDGE),
                             overlayPreview: u.overlay ? thumbUrl(resp.dataset, resp.session, u.overlay, LIGHTBOX_MAX_EDGE) : null,
+                            graspJsonUrl: u.grasp_json ? buildUrl(u.grasp_json) : null,
                             kind: u.kind || 'rgb',
                             pairedRgb: null,
                             label: u.filename,
@@ -1407,6 +1420,7 @@ function uploadOne(item, uploadUrl, session, metadata, dataset, batchId) {
                             overlayThumb: u.overlay ? thumbUrl(resp.dataset, resp.session, u.overlay) : null,
                             sourcePreview: thumbUrl(resp.dataset, resp.session, u.filename, LIGHTBOX_MAX_EDGE),
                             overlayPreview: u.overlay ? thumbUrl(resp.dataset, resp.session, u.overlay, LIGHTBOX_MAX_EDGE) : null,
+                            graspJsonUrl: u.grasp_json ? buildUrl(u.grasp_json) : null,
                             kind: u.kind || 'rgb',
                             pairedRgb: u.depth ? null : null,  // depth files don't carry their RGB pair in the per-POST response
                             label: u.filename,
