@@ -2657,18 +2657,28 @@ body {
 .image-card-footer .grasp-json-link { align-self: center; margin-top: 0; }
 
 /* Grasp JSON viewer modal (reuses .req-modal / .req-card shell). */
-.grasp-card { width: min(640px, 100%); }
+/* Fixed card height so expanding nodes scrolls INSIDE the body instead of
+ * resizing (and jumping) the whole modal. */
+.grasp-card {
+    width: min(720px, 100%);
+    height: min(82vh, 720px);
+}
+/* Roomier gutters; horizontal padding matches across header/toolbar/body/foot. */
+.grasp-card .req-head { padding: 1.6rem 1.85rem 1.25rem; }
 .grasp-body {
-    padding: 10px 14px;
+    flex: 1 1 auto;
+    min-height: 0;
+    padding: 16px 30px;
     overflow: auto;
     background: oklch(0.985 0 0);
     border-bottom: 1px solid #eef0f4;
+    scroll-behavior: smooth;
 }
 .grasp-json {
     margin: 0;
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
-    font-size: 12.5px;
-    line-height: 1.6;
+    font-size: 16px;
+    line-height: 1.65;
     color: oklch(0.205 0 0);
 }
 
@@ -2678,7 +2688,7 @@ body {
     align-items: center;
     justify-content: space-between;
     gap: 10px;
-    padding: 8px 14px;
+    padding: 10px 30px;
     background: oklch(0.97 0 0);
     border-bottom: 1px solid #eef0f4;
 }
@@ -2705,28 +2715,37 @@ body {
 }
 .jt-tool:hover { background: oklch(0.97 0 0); }
 
-/* Collapsible JSON tree */
+/* Collapsible JSON tree — children animate open/closed via grid-rows 0fr↔1fr. */
 .jt .jt-children {
-    padding-left: 1.15rem;
-    margin-left: 0.32rem;
+    display: grid;
+    grid-template-rows: 1fr;
+    transition: grid-template-rows 0.22s ease;
+}
+.jt .jt-children-inner {
+    overflow: hidden;
+    min-height: 0;
+    padding-left: 1.2rem;
+    margin-left: 0.34rem;
     border-left: 1px solid #e9ecef;
 }
+.jt-node.jt-collapsed > .jt-children { grid-template-rows: 0fr; }
+.jt-node.jt-collapsed > .jt-close { display: none; }
+
 .jt-row { white-space: pre; }
 .jt-header { cursor: pointer; border-radius: 4px; }
 .jt-header:hover { background: oklch(0.95 0 0); }
 .jt-toggle {
     display: inline-block;
-    width: 0.9em;
+    width: 0.95em;
     color: #adb5bd;
     user-select: none;
+    transition: transform 0.18s ease;
 }
-.jt-toggle::before { content: "\25BE"; }                 /* ▾ expanded */
-.jt-node.jt-collapsed > .jt-header .jt-toggle::before { content: "\25B8"; }  /* ▸ collapsed */
-.jt-node.jt-collapsed > .jt-children,
-.jt-node.jt-collapsed > .jt-close { display: none; }
+.jt-toggle::before { content: "\25BE"; }                 /* ▾ */
+.jt-node.jt-collapsed > .jt-header .jt-toggle { transform: rotate(-90deg); }
 .jt-hint { display: none; color: #868e96; }
 .jt-node.jt-collapsed > .jt-header .jt-hint { display: inline; }
-.jt-close { padding-left: 0.9em; }                       /* align under toggle */
+.jt-close { padding-left: 0.95em; }                      /* align under toggle */
 
 /* Syntax colors */
 .jt-key    { color: #1f2933; font-weight: 600; }
@@ -2739,8 +2758,8 @@ body {
 .grasp-foot {
     display: flex;
     justify-content: flex-end;
-    gap: 8px;
-    padding: 12px 16px;
+    gap: 10px;
+    padding: 18px 30px 20px;
 }
 /* shadcn buttons: ghost(outline) + primary(default). */
 .grasp-btn {
