@@ -517,13 +517,14 @@ let _graspJsonText = '';
 async function openGraspModal(url, name) {
     const box = document.getElementById('graspModal');
     if (!box) return;
-    const pre = document.getElementById('graspJsonPre');
+    const tree = document.getElementById('graspJsonTree');
     const sub = document.getElementById('graspSub');
     const dl = document.getElementById('graspDownloadBtn');
     document.getElementById('graspTitle').textContent = name || 'Grasp points';
+    document.getElementById('graspPath').textContent = 'root';
     dl.href = url;
     dl.setAttribute('download', ((name || 'scene').replace(/\.[^.]+$/, '')) + '_grasp.json');
-    pre.textContent = 'Loading…';
+    tree.textContent = 'Loading…';
     sub.innerHTML = '&nbsp;';
     _graspJsonText = '';
     box.hidden = false;
@@ -533,7 +534,7 @@ async function openGraspModal(url, name) {
         if (!resp.ok) throw new Error('HTTP ' + resp.status);
         const data = await resp.json();
         _graspJsonText = JSON.stringify(data, null, 2);
-        pre.textContent = _graspJsonText;
+        renderGraspTree(data);
         const objs = data.objects || [];
         const pickable = objs.filter(o => o && o.pickable).length;
         const best = data.best_pick
@@ -541,7 +542,7 @@ async function openGraspModal(url, name) {
             : 'no pickable point';
         sub.textContent = `${objs.length} objects · ${pickable} pickable · ${best}`;
     } catch (err) {
-        pre.textContent = 'Failed to load grasp JSON: ' + err.message;
+        tree.textContent = 'Failed to load grasp JSON: ' + err.message;
     }
 }
 
@@ -569,6 +570,109 @@ document.addEventListener('keydown', (e) => {
     const box = document.getElementById('graspModal');
     if (box && !box.hidden && e.key === 'Escape') closeGraspModal();
 });
+
+// --- Collapsible JSON tree (no external library) -----------------------------
+function _jtEsc(s) {
+    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+// One DOM node for a key/value at `path`. Objects/arrays become collapsible.
+function _jtNode(key, value, path) {
+    const node = document.createElement('div');
+    node.className = 'jt-node';
+    const keyHtml = key === null
+        ? ''
+        : `<span class="jt-key">"${_jtEsc(key)}"</span><span class="jt-colon">: </span>`;
+
+    const isObj = value !== null && typeof value === 'object';
+    if (!isObj) {
+        let v;
+        if (typeof value === 'string') v = `<span class="jt-str">"${_jtEsc(value)}"</span>`;
+        else if (typeof value === 'number') v = `<span class="jt-num">${value}</span>`;
+        else if (typeof value === 'boolean') v = `<span class="jt-bool">${value}</span>`;
+        else v = `<span class="jt-null">null</span>`;
+        const row = document.createElement('div');
+        row.className = 'jt-row';
+        row.dataset.path = path;
+        row.innerHTML = keyHtml + v;
+        node.appendChild(row);
+        return node;
+    }
+
+    const isArr = Array.isArray(value);
+    const entries = isArr ? value.map((v, i) => [i, v]) : Object.entries(value);
+    const open = isArr ? '[' : '{';
+    const close = isArr ? ']' : '}';
+    const count = isArr ? `${entries.length} items` : `${entries.length} keys`;
+
+    const header = document.createElement('div');
+    header.className = 'jt-row jt-header';
+    header.dataset.path = path;
+    header.innerHTML =
+        `<span class="jt-toggle" aria-hidden="true"></span>${keyHtml}` +
+        `<span class="jt-bracket">${open}</span>` +
+        `<span class="jt-hint">&hellip; ${count} ${close}</span>`;
+    node.appendChild(header);
+
+    const children = document.createElement('div');
+    children.className = 'jt-children';
+    const inner = document.createElement('div');
+    inner.className = 'jt-children-inner';
+    for (const [k, v] of entries) {
+        const childPath = isArr ? `${path}[${k}]` : `${path}.${k}`;
+        inner.appendChild(_jtNode(isArr ? null : k, v, childPath));
+    }
+    children.appendChild(inner);
+    node.appendChild(children);
+
+    const closeRow = document.createElement('div');
+    closeRow.className = 'jt-row jt-close';
+    closeRow.innerHTML = `<span class="jt-bracket">${close}</span>`;
+    node.appendChild(closeRow);
+    return node;
+}
+
+let _graspTreeWired = false;
+function renderGraspTree(data) {
+    const c = document.getElementById('graspJsonTree');
+    if (!c) return;
+    c.innerHTML = '';
+    c.appendChild(_jtNode(null, data, 'root'));
+    // collapse the big arrays one level down by default so the top is readable
+    c.querySelectorAll(':scope > .jt-node > .jt-children > .jt-children-inner > .jt-node').forEach(n => {
+        if (n.querySelector(':scope > .jt-children > .jt-children-inner > .jt-node > .jt-children')) {
+            n.classList.add('jt-collapsed');
+        }
+    });
+    if (_graspTreeWired) return;
+    _graspTreeWired = true;
+    // Fold/unfold on header click.
+    c.addEventListener('click', (e) => {
+        const h = e.target.closest('.jt-header');
+        if (h && c.contains(h)) h.parentElement.classList.toggle('jt-collapsed');
+    });
+    // Show the JSON path of whatever node the cursor is over.
+    c.addEventListener('mousemove', (e) => {
+        const n = e.target.closest('[data-path]');
+        const bar = document.getElementById('graspPath');
+        if (n && bar) bar.textContent = n.dataset.path;
+    });
+}
+
+function graspTreeExpandAll() {
+    document.querySelectorAll('#graspJsonTree .jt-node.jt-collapsed')
+        .forEach(n => n.classList.remove('jt-collapsed'));
+}
+function graspTreeCollapseAll() {
+    const c = document.getElementById('graspJsonTree');
+    if (!c) return;
+    c.querySelectorAll('.jt-node').forEach(n => {
+        if (n.querySelector(':scope > .jt-children')) n.classList.add('jt-collapsed');
+    });
+    // keep the root open so the user sees the top-level keys
+    const root = c.firstElementChild;
+    if (root) root.classList.remove('jt-collapsed');
+}
 
 // Trigger a one-shot CSS spin animation on an element
 function spinThis(el) {

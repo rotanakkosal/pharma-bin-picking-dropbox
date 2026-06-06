@@ -308,8 +308,15 @@
                 </div>
                 <button type="button" class="req-close" onclick="closeGraspModal()" aria-label="Close">&times;</button>
             </div>
+            <div class="grasp-toolbar">
+                <span class="grasp-path" id="graspPath" title="Path of the hovered node">root</span>
+                <span class="grasp-tools">
+                    <button type="button" class="jt-tool" onclick="graspTreeCollapseAll()">Collapse all</button>
+                    <button type="button" class="jt-tool" onclick="graspTreeExpandAll()">Expand all</button>
+                </span>
+            </div>
             <div class="grasp-body">
-                <pre class="grasp-json" id="graspJsonPre"></pre>
+                <div class="grasp-json jt" id="graspJsonTree"></div>
             </div>
             <div class="grasp-foot">
                 <button type="button" class="grasp-btn grasp-btn--ghost" id="graspCopyBtn" onclick="copyGraspJson()">Copy</button>

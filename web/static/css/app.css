@@ -2659,20 +2659,83 @@ body {
 /* Grasp JSON viewer modal (reuses .req-modal / .req-card shell). */
 .grasp-card { width: min(640px, 100%); }
 .grasp-body {
-    padding: 14px 16px;
+    padding: 10px 14px;
     overflow: auto;
-    background: oklch(0.97 0 0);          /* --muted/--accent */
+    background: oklch(0.985 0 0);
     border-bottom: 1px solid #eef0f4;
 }
 .grasp-json {
     margin: 0;
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
     font-size: 12.5px;
-    line-height: 1.55;
+    line-height: 1.6;
     color: oklch(0.205 0 0);
-    white-space: pre;
-    tab-size: 2;
 }
+
+/* Toolbar above the tree: hovered path on the left, expand/collapse on right. */
+.grasp-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 8px 14px;
+    background: oklch(0.97 0 0);
+    border-bottom: 1px solid #eef0f4;
+}
+.grasp-path {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 12px;
+    color: #495057;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.grasp-tools { display: inline-flex; gap: 6px; flex: 0 0 auto; }
+.jt-tool {
+    height: 26px;
+    padding: 0 9px;
+    font-size: 12px;
+    font-weight: 500;
+    color: oklch(0% 0 0);
+    background: oklch(1 0 0);
+    border: 1px solid oklch(0.922 0 0);
+    border-radius: 7px;
+    cursor: pointer;
+    transition: background-color 0.15s;
+}
+.jt-tool:hover { background: oklch(0.97 0 0); }
+
+/* Collapsible JSON tree */
+.jt .jt-children {
+    padding-left: 1.15rem;
+    margin-left: 0.32rem;
+    border-left: 1px solid #e9ecef;
+}
+.jt-row { white-space: pre; }
+.jt-header { cursor: pointer; border-radius: 4px; }
+.jt-header:hover { background: oklch(0.95 0 0); }
+.jt-toggle {
+    display: inline-block;
+    width: 0.9em;
+    color: #adb5bd;
+    user-select: none;
+}
+.jt-toggle::before { content: "\25BE"; }                 /* ▾ expanded */
+.jt-node.jt-collapsed > .jt-header .jt-toggle::before { content: "\25B8"; }  /* ▸ collapsed */
+.jt-node.jt-collapsed > .jt-children,
+.jt-node.jt-collapsed > .jt-close { display: none; }
+.jt-hint { display: none; color: #868e96; }
+.jt-node.jt-collapsed > .jt-header .jt-hint { display: inline; }
+.jt-close { padding-left: 0.9em; }                       /* align under toggle */
+
+/* Syntax colors */
+.jt-key    { color: #1f2933; font-weight: 600; }
+.jt-colon  { color: #868e96; }
+.jt-str    { color: #2f9e44; }
+.jt-num    { color: #1971c2; }
+.jt-bool   { color: #e8590c; }
+.jt-null   { color: #868e96; }
+.jt-bracket{ color: #d6336c; }
 .grasp-foot {
     display: flex;
     justify-content: flex-end;
