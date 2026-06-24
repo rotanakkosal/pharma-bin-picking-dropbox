@@ -521,7 +521,11 @@ async function openGraspModal(url, name) {
     const sub = document.getElementById('graspSub');
     const dl = document.getElementById('graspDownloadBtn');
     document.getElementById('graspTitle').textContent = name || 'Grasp points';
-    document.getElementById('graspPath').textContent = 'root';
+    const pathBar = document.getElementById('graspPath');
+    if (pathBar) {
+        pathBar.textContent = 'root';
+        pathBar.title = 'root';
+    }
     dl.href = url;
     dl.setAttribute('download', ((name || 'scene').replace(/\.[^.]+$/, '')) + '_grasp.json');
     tree.textContent = 'Loading…';
@@ -655,7 +659,17 @@ function renderGraspTree(data) {
     c.addEventListener('mousemove', (e) => {
         const n = e.target.closest('[data-path]');
         const bar = document.getElementById('graspPath');
-        if (n && bar) bar.textContent = n.dataset.path;
+        if (n && bar) {
+            bar.textContent = n.dataset.path;
+            bar.title = n.dataset.path;
+        }
+    });
+    c.addEventListener('mouseleave', () => {
+        const bar = document.getElementById('graspPath');
+        if (bar) {
+            bar.textContent = 'root';
+            bar.title = 'root';
+        }
     });
 }
 
